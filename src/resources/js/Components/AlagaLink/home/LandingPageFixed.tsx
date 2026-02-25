@@ -1,0 +1,754 @@
+import React, { useState, useRef } from 'react';
+import Image from 'next/image';
+import { useAppContext } from '@/Providers/AlagaLink/AppContext';
+import { DisabilityCategory, AssistiveDevice, MedicalService, LivelihoodProgram, ProgramAvailment, UserProfile } from '@/Providers/AlagaLink/types';
+import RegistrationWorkflow from '../members/RegistrationWorkflow';
+
+const LandingPage: React.FC = () => {
+  const {
+    loginWithPassword,
+    addUser,
+    loginById,
+    addProgramRequest,
+    searchSignal,
+    setSearchSignal,
+    notifications,
+    currentUser,
+    devices,
+    medicalServices,
+    livelihoodPrograms,
+  } = useAppContext();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showSignupPopover, setShowSignupPopover] = useState(false);
+  const [showLoginPopover, setShowLoginPopover] = useState(false);
+  const [activeRegistration, setActiveRegistration] = useState<'User' | 'Staff' | null>(null);
+  const [showPWDIDPopover, setShowPWDIDPopover] = useState(false);
+  const [loginError, setLoginError] = useState('');
+
+  const programsRef = useRef<HTMLDivElement>(null);
+  const missingRef = useRef<HTMLDivElement>(null);
+  const joinRef = useRef<HTMLDivElement>(null);
+  const [aboutService, setAboutService] = useState<{ title: string; description: string } | null>(null);
+
+  // Services catalog for landing page preview
+  type ApplyTarget = { sentinelServiceId?: string; title?: string } | null;
+  const [selectedService, setSelectedService] = useState<{ id: string; title: string; desc: string } | null>(null);
+  const [showServicePopover, setShowServicePopover] = useState(false);
+  const [showApplyPopover, setShowApplyPopover] = useState(false);
+  const [applyTarget, setApplyTarget] = useState<ApplyTarget>(null);
+
+  const openService = (id: string, title: string, desc: string) => {
+    setSelectedService({ id, title, desc });
+    setShowServicePopover(true);
+  };
+
+  const handleApplyAttempt = (item?: { id?: string; title?: string } | null) => {
+    if (!item && selectedService?.id) {
+      setApplyTarget({ sentinelServiceId: selectedService.id, title: selectedService.title });
+    } else {
+      setApplyTarget(item || null);
+    }
+    setShowApplyPopover(true);
+  };
+
+  const scrollTo = (ref: React.RefObject<HTMLDivElement | null>) => {
+    ref.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError('');
+    const success = loginWithPassword(email, password);
+    if (success) {
+      setShowLoginPopover(false);
+      setEmail('');
+      setPassword('');
+    } else {
+      setLoginError('Invalid email/username or password. Please try again.');
+    }
+  };
+
+  const handleRegister = (formData: Partial<UserProfile>) => {
+    const newId = activeRegistration === 'Staff' ? `ADM-LT-${Date.now()}` : `LT-PWD-${Date.now()}`;
+    const newUser: UserProfile = {
+      id: newId,
+      email: (formData.email as string) || `${newId}@local`,
+      role: activeRegistration === 'Staff' ? 'Admin' : 'User',
+      firstName: (formData.firstName as string) || 'First',
+      lastName: (formData.lastName as string) || 'Last',
+      address: (formData.address as string) || '',
+      birthDate: (formData.birthDate as string) || new Date().toISOString(),
+      provincialAddress: (formData.provincialAddress as string) || '',
+      civilStatus: (formData.civilStatus as string) || 'Single',
+      occupation: (formData.occupation as string) || '',
+      sex: (formData.sex as 'Male' | 'Female' | 'Other') || 'Other',
+      bloodType: (formData.bloodType as string) || 'N/A',
+      age: (formData.age as number) || 0,
+      contactNumber: (formData.contactNumber as string) || '',
+      disabilityCategory: (formData.disabilityCategory as DisabilityCategory) || DisabilityCategory.None,
+      familyComposition: (formData.familyComposition as unknown as import('../../types').FamilyMember[]) || [],
+      emergencyContact: (formData.emergencyContact as unknown as { name: string; relation: string; contact: string; }) || { name: '', relation: '', contact: '' },
+      registrantType: activeRegistration === 'Staff' ? 'PDAO Staff' : 'Self',
+      status: 'Pending',
+      photoUrl: (formData.photoUrl as string) || '',
+      customData: (formData.customData as Record<string, string>) || {},
+      history: { lostAndFound: [], programs: [] }
+    };
+    addUser(newUser);
+    const newReq: ProgramAvailment = {
+      id: `req-${Date.now()}`,
+      userId: newId,
+      programType: 'ID',
+      title: 'PWD ID Application',
+      status: 'Pending',
+      dateApplied: new Date().toISOString(),
+      details: ''
+    };
+    addProgramRequest(newReq);
+    loginById(newId);
+    return true;
+  };
+
+  React.useEffect(() => {
+    if (!searchSignal) return;
+    if (searchSignal.page === 'home') {
+      if (searchSignal.section === 'login') setShowLoginPopover(true);
+      if (searchSignal.section === 'signup') setShowSignupPopover(true);
+      setSearchSignal(null);
+    }
+  }, [searchSignal, setSearchSignal]);
+
+  const highlights = [
+    { title: 'Inclusive Registry', icon: 'fa-users-viewfinder', color: 'text-alaga-blue', ref: joinRef, desc: 'Digital profiling for PWD/CWD families.' },
+    { title: 'Municipal Aid', icon: 'fa-hand-holding-medical', color: 'text-alaga-teal', ref: programsRef, desc: 'Direct access to medicine & devices.' },
+    { title: 'Rapid Recovery', icon: 'fa-person-circle-question', color: 'text-red-500', ref: missingRef, desc: 'Community alert system for safety.' }
+  ];
+
+  const openAbout = (title: string, description: string) => {
+    setAboutService({ title, description });
+  };
+
+  const idNotif = notifications.some(n => n.programType === 'ID' || (n.link && n.link.startsWith('programs:ID')));
+  const assistiveNotif = notifications.some(n => n.programType === 'Device' || (n.link && n.link.includes('requests') && n.programType === 'Device'));
+  const medicalNotif = notifications.some(n => n.programType === 'Medical' || (n.link && n.link.includes('requests') && n.programType === 'Medical'));
+  const philhealthNotif = notifications.some(n => n.programType === 'PhilHealth' || (n.link && n.link.startsWith('programs:PhilHealth')));
+  const livelihoodNotif = notifications.some(n => n.programType === 'Livelihood' || (n.link && n.link.startsWith('programs:Livelihood')));
+
+  if (activeRegistration) {
+    return (
+      <div className="min-h-screen bg-alaga-gray dark:bg-alaga-navy p-4 md:p-12">
+        <button
+          onClick={() => setActiveRegistration(null)}
+          className="mb-8 flex items-center gap-3 px-6 py-3 bg-white dark:bg-white/5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:scale-105 transition-all"
+        >
+          <i className="fa-solid fa-arrow-left"></i> Return to Portal
+        </button>
+        <RegistrationWorkflow
+          initialData={activeRegistration === 'Staff' ? { role: 'Admin', registrantType: 'PDAO Staff', disabilityCategory: DisabilityCategory.None } : { role: 'User', registrantType: 'Self', disabilityCategory: DisabilityCategory.Autism }}
+          onSubmit={handleRegister}
+          onCancel={() => setActiveRegistration(null)}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-white dark:bg-alaga-navy text-gray-900 dark:text-white transition-colors duration-500 overflow-x-hidden">
+      <section id="home" className="relative min-h-screen flex flex-col items-center justify-center p-6 text-center overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-20">
+           <div className="absolute top-1/4 -left-20 w-96 h-96 bg-alaga-blue rounded-full blur-[120px] animate-pulse"></div>
+           <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-alaga-gold rounded-full blur-[120px] animate-pulse delay-700"></div>
+        </div>
+
+        <div className="relative z-10 max-w-4xl space-y-12 animate-in fade-in zoom-in-95 duration-1000">
+           <div className="space-y-4">
+              <div className="w-24 h-24 bg-alaga-blue rounded-[32px] flex items-center justify-center mx-auto shadow-2xl inner-glow animate-float">
+                <i className="fa-solid fa-hands-holding-child text-white text-5xl"></i>
+              </div>
+              <h1 className="text-6xl md:text-8xl font-black text-3d-heavy tracking-tighter leading-none">
+                Alaga<span className="text-alaga-blue">Link</span>
+              </h1>
+              <p className="text-sm md:text-xl font-black uppercase tracking-[0.4em] opacity-40">
+                La Trinidad PWD/CWD Information System
+              </p>
+           </div>
+
+           <p className="text-lg md:text-2xl font-medium opacity-70 max-w-2xl mx-auto leading-relaxed">
+             Bridging the gap between the community and municipal services through digital inclusion and high-integrity profiling.
+           </p>
+
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-10">
+              {highlights.map((h, i) => (
+                <div
+                  key={i}
+                  onClick={() => scrollTo(h.ref)}
+                  className="inflated-card bg-white dark:bg-alaga-charcoal p-8 rounded-[32px] border border-gray-100 dark:border-white/5 cursor-pointer group hover:scale-105 active:scale-95 transition-all"
+                >
+                  <i className={`fa-solid ${h.icon} ${h.color} text-4xl mb-4 group-hover:scale-110 transition-transform`}></i>
+                  <h4 className="font-black text-lg mb-1">{h.title}</h4>
+                  <p className="text-xs opacity-50 font-medium">{h.desc}</p>
+                </div>
+              ))}
+           </div>
+
+           <button
+             onClick={() => setShowLoginPopover(true)}
+             className="px-12 py-6 bg-alaga-blue text-white rounded-[32px] font-black text-xl shadow-[0_20px_50px_rgba(37,70,240,0.3)] hover:scale-105 active:scale-95 transition-all flex items-center gap-4 mx-auto"
+           >
+             Enter Municipal Portal <i className="fa-solid fa-chevron-down text-sm animate-bounce"></i>
+           </button>
+        </div>
+      </section>
+
+      <section id="programs" ref={programsRef} className="py-32 px-6 bg-alaga-gray dark:bg-alaga-navy/40 relative">
+        <div className="max-w-7xl mx-auto space-y-20">
+           <div className="text-center space-y-4">
+            <h2 className="text-4xl md:text-6xl font-black text-3d">Programs & Services</h2>
+              <p className="text-xs font-black uppercase tracking-[0.3em] opacity-30">The Service Delivery Backbone</p>
+           </div>
+
+          <div className="space-y-8">
+
+            {/* Dashboard-style PWD ID Issuance (featured) */}
+            <div className="max-w-4xl mx-auto inflated-card bg-white dark:bg-alaga-charcoal rounded-[32px] p-14 md:p-16 relative grid md:grid-cols-4 gap-6 items-center cursor-pointer transition-transform duration-300 ease-out transform-gpu hover:scale-105 hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-alaga-blue/10 md:min-h-[320px]" onClick={() => openService('id', 'PWD ID Issuance', 'Apply for an official PWD ID. You will need basic identification documents and proof of disability. Click Register to continue to login/registration.') }>
+              <div className="md:col-span-3 text-left">
+                <div className="inline-flex items-center gap-3 px-4 py-1.5 bg-alaga-blue/10 text-alaga-blue rounded-full mb-3">
+                  <i className="fa-solid fa-id-card-clip text-lg"></i>
+                  <span className="text-[11px] font-black uppercase tracking-widest">Official Identification</span>
+                </div>
+                <h3 className="text-5xl md:text-6xl font-black mb-2 text-3d-heavy tracking-tighter drop-shadow-lg animate-pulse">PWD ID Issuance</h3>
+                <p className="opacity-70 text-sm md:text-base mb-4 leading-relaxed">Apply for your official PWD identification. This ID helps you access priority services and availments from the municipal offices.</p>
+                <div className="flex items-center gap-4">
+                  <button onClick={(e) => { e.stopPropagation(); openAbout('PWD ID Issuance', 'Apply for an official PWD ID. You will need basic identification documents and proof of disability. Click Register to continue to login/registration.'); }} className="px-6 py-3 bg-alaga-blue text-white rounded-xl font-black uppercase tracking-widest text-sm transition-transform duration-200 hover:scale-105 shadow-sm">About</button>
+                  <button onClick={(e) => { e.stopPropagation(); scrollTo(joinRef); }} className="px-6 py-3 border-2 border-alaga-blue text-alaga-blue rounded-xl font-black uppercase tracking-widest text-sm transition-transform duration-200 hover:scale-105">Register Now</button>
+                </div>
+              </div>
+              <div className="md:col-span-1 text-center">
+                {idNotif && (
+                  <span className="inline-flex items-center justify-center bg-red-500 text-white text-[10px] font-black rounded-full w-6 h-6">!</span>
+                )}
+                <div className="mt-4 text-xs opacity-60">Need assistance? Visit the PWD services counter.</div>
+              </div>
+            </div>
+
+            {/* Service cards: PhilHealth, Assistive Devices, Medical Services, Livelihood */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {/* PhilHealth Card */}
+              <div className="inflated-card bg-white dark:bg-alaga-charcoal rounded-[24px] overflow-hidden flex flex-col group transition-transform duration-300 ease-out transform-gpu hover:scale-105 hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-alaga-gold/10 h-full min-h-[260px] p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-alaga-gold text-[10px] font-black uppercase tracking-widest">Health & Benefits</span>
+                    <h3 className="text-2xl font-black mt-2">PhilHealth</h3>
+                  </div>
+                  {philhealthNotif && <span className="w-3 h-3 bg-red-500 rounded-full" />}
+                </div>
+                <p className="opacity-70 text-xs md:text-sm mt-4 flex-1 leading-relaxed">Sponsored enrollment and assistance for PWD members to access government health insurance benefits.</p>
+                <div className="mt-6 flex items-center gap-3">
+                  <button onClick={(e) => { e.stopPropagation(); openService('philhealth', 'PhilHealth', 'Sponsored PhilHealth enrollment and benefit assistance for eligible PWD members.'); }} className="px-4 py-2 bg-alaga-gold text-alaga-navy rounded-xl font-black uppercase tracking-widest text-xs transition-transform duration-200 hover:scale-105 shadow-sm">Details</button>
+                  <button onClick={(e) => { e.stopPropagation(); openAbout('PhilHealth', 'PhilHealth enrollment and benefits. Click Register to proceed to login/registration.'); }} className="px-4 py-2 border border-gray-200 rounded-xl text-xs uppercase tracking-widest">About</button>
+                </div>
+              </div>
+
+              {/* Assistive Devices Card */}
+              <div className="inflated-card bg-white dark:bg-alaga-charcoal rounded-[24px] overflow-hidden flex flex-col group transition-transform duration-300 ease-out transform-gpu hover:scale-105 hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-alaga-blue/10 h-full min-h-[260px] p-0">
+                <div className="relative h-44 overflow-hidden cursor-pointer bg-gradient-to-br from-alaga-blue/10 to-alaga-blue/5">
+                  <Image src="/images/programs/standard wheelchair.jpg" alt="Wheelchairs and assistive devices" fill className="object-cover transition-transform duration-700 group-hover:scale-105 rounded-t-lg" sizes="(min-width:1024px) 25vw, 100vw" />
+                </div>
+                <div className="p-6 space-y-3 flex flex-col flex-1">
+                  <span className="text-alaga-blue text-[10px] font-black uppercase tracking-widest">Inventory Support</span>
+                  <h3 className="text-2xl font-black">Assistive Devices</h3>
+                  {assistiveNotif && <span className="absolute top-6 right-6 w-3 h-3 bg-red-500 rounded-full shadow-md" />}
+                  <p className="opacity-70 text-xs md:text-sm font-medium leading-relaxed">Request wheelchairs, hearing aids, and mobility tools directly through your verified digital identity.</p>
+                  <div className="mt-4 flex items-center gap-3">
+                    <button onClick={(e) => { e.stopPropagation(); openService('devices', 'Assistive Devices', 'Request wheelchairs, hearing aids, and mobility tools.'); }} className="px-4 py-2 bg-alaga-blue text-white rounded-xl font-black uppercase tracking-widest text-xs transition-transform duration-200 hover:scale-105 shadow-sm">Details</button>
+                    <button onClick={(e) => { e.stopPropagation(); openAbout('Assistive Devices', 'Request wheelchairs, hearing aids, and mobility tools. Click Request in the details to proceed to login.'); }} className="px-4 py-2 border border-gray-200 rounded-xl text-xs uppercase tracking-widest">About</button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Medical Services Card */}
+              <div className="inflated-card bg-white dark:bg-alaga-charcoal rounded-[24px] overflow-hidden flex flex-col group transition-transform duration-300 ease-out transform-gpu hover:scale-105 hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-red-200 h-full min-h-[260px] p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-red-500 text-[10px] font-black uppercase tracking-widest">Clinical Support</span>
+                    <h3 className="text-2xl font-black mt-2">Medical Services</h3>
+                  </div>
+                  {medicalNotif && <span className="w-3 h-3 bg-red-500 rounded-full" />}
+                </div>
+                <p className="opacity-70 text-xs md:text-sm mt-4 leading-relaxed">Access medicines, therapeutic sessions, and medical referrals for PWD members.</p>
+                <div className="mt-6 flex items-center gap-3">
+                  <button onClick={(e) => { e.stopPropagation(); openService('medical', 'Medical Services', 'Access medicines, therapeutic sessions, and medical referrals for PWD members.'); }} className="px-4 py-2 bg-red-500 text-white rounded-xl font-black uppercase tracking-widest text-xs transition-transform duration-200 hover:scale-105 shadow-sm">Details</button>
+                  <button onClick={(e) => { e.stopPropagation(); openAbout('Medical Services', 'Access medicines and medical assistance. Click Request in the details to proceed to login.'); }} className="px-4 py-2 border border-gray-200 rounded-xl text-xs uppercase tracking-widest">About</button>
+                </div>
+              </div>
+
+              {/* Livelihood Hub Card */}
+              <div className="inflated-card bg-white dark:bg-alaga-charcoal rounded-[24px] overflow-hidden flex flex-col group transition-transform duration-300 ease-out transform-gpu hover:scale-105 hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-alaga-teal/10 h-full min-h-[260px] p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-alaga-teal text-[10px] font-black uppercase tracking-widest">Growth & Empowerment</span>
+                    <h3 className="text-2xl font-black mt-2">Livelihood Hub</h3>
+                  </div>
+                  {livelihoodNotif && <span className="w-3 h-3 bg-red-500 rounded-full" />}
+                </div>
+                <p className="opacity-70 text-xs md:text-sm mt-4 leading-relaxed">Access workshops in ethnic weaving, digital literacy, and strawberry processing tailored for PWD/CWD members.</p>
+                <div className="mt-6 flex items-center gap-3">
+                  <button onClick={(e) => { e.stopPropagation(); openService('livelihood', 'Livelihood Hub', 'Workshops and grants to support PWD livelihoods.'); }} className="px-4 py-2 bg-alaga-teal text-white rounded-xl font-black uppercase tracking-widest text-xs transition-transform duration-200 hover:scale-105 shadow-sm">Details</button>
+                  <button onClick={(e) => { e.stopPropagation(); openAbout('Livelihood Hub', 'Access workshops in ethnic weaving, digital literacy, and strawberry processing. Click Request in the details to proceed to login.'); }} className="px-4 py-2 border border-gray-200 rounded-xl text-xs uppercase tracking-widest">About</button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <section id="community-vigil" ref={missingRef} className="py-32 px-6">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 items-center gap-20">
+           <div className="space-y-8">
+              <div className="space-y-4">
+                 <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-2xl flex items-center justify-center text-3xl">
+                    <i className="fa-solid fa-person-circle-question"></i>
+                 </div>
+                 <h2 className="text-4xl md:text-6xl font-black text-3d-heavy">Community Vigilance</h2>
+                 <p className="text-sm font-black uppercase tracking-[0.3em] opacity-30">Lost & Found Recovery System</p>
+              </div>
+              <p className="text-lg font-medium opacity-60 leading-relaxed">Our advanced community alert system links registry data to rapid incident reporting, helping PDAO and MSWDO coordinate faster recovery for missing persons.</p>
+              <ul className="space-y-4">
+                {['Direct Registry Integration', 'Real-time Social Dissemination', 'Verified Reporting Channels'].map((item, i) => (
+                  <li key={i} className="flex items-center gap-4 font-black text-sm">
+                    <i className="fa-solid fa-circle-check text-alaga-teal"></i> {item}
+                  </li>
+                ))}
+              </ul>
+              <button onClick={() => scrollTo(joinRef)} className="px-10 py-5 border-2 border-red-500 text-red-500 rounded-[24px] font-black text-sm uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all shadow-xl">Explore Safety Portal</button>
+           </div>
+
+           <div className="relative group perspective-1000">
+              <div className="absolute inset-0 bg-red-500/10 rounded-[32px] blur-3xl group-hover:bg-red-500/20 transition-all"></div>
+              <div className="relative bg-white dark:bg-alaga-charcoal p-8 rounded-[32px] border-2 border-white dark:border-white/5 shadow-xl inflated-card">
+                 <div className="relative w-full h-64 rounded-[24px] overflow-hidden mb-6 bg-gradient-to-br from-red-500/10 to-red-500/5">
+                    <Image src="/images/lost-found/community-safety.svg" alt="Community safety and alert" fill className="object-cover" sizes="(min-width:1024px) 50vw, 100vw" />
+                 </div>
+                 <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                       <h4 className="text-xl font-black">Search: Active Alerts</h4>
+                       <span className="px-2 py-1 bg-red-500 text-white rounded-full text-[8px] font-black uppercase animate-pulse">Live Tracking</span>
+                    </div>
+                    <p className="opacity-40 text-xs font-bold">Public safety is an integrated community responsibility.</p>
+                 </div>
+              </div>
+           </div>
+        </div>
+      </section>
+
+      <section id="login" ref={joinRef} className="py-32 px-6 bg-alaga-blue text-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-20 opacity-10 rotate-12">
+          <i className="fa-solid fa-id-card-clip text-[400px]"></i>
+        </div>
+
+        <div className="max-w-4xl mx-auto relative z-10">
+           <div className="bg-white/10 backdrop-blur-3xl p-10 md:p-16 rounded-[48px] border border-white/20 shadow-[0_50px_100px_rgba(0,0,0,0.3)] space-y-10">
+              <div className="text-center space-y-3">
+                 <h2 className="text-4xl md:text-5xl font-black">Join Us!</h2>
+                 <p className="opacity-80 font-medium text-sm">Access your account or start your official registration.</p>
+              </div>
+
+              <form onSubmit={handleLogin} className="space-y-5">
+                 {/* Email/Username Input */}
+                 <div className="relative group">
+                    <label className="text-[10px] font-black uppercase tracking-widest opacity-70 block mb-2">Email or Username</label>
+                    <i className="fa-solid fa-envelope absolute left-4 top-[46px] opacity-40 text-sm"></i>
+                    <input
+                      required
+                      type="text"
+                      value={email}
+                      onChange={e => {setEmail(e.target.value); setLoginError('');}}
+                      placeholder="Enter your email or ID..."
+                      className="w-full pl-12 pr-6 py-4 bg-white/15 border-2 border-white/20 focus:border-white rounded-[16px] font-medium text-base placeholder:text-white/40 outline-none transition-all focus:bg-white/20"
+                    />
+                 </div>
+
+                 {/* Password Input */}
+                 <div className="relative group">
+                    <label className="text-[10px] font-black uppercase tracking-widest opacity-70 block mb-2">Password</label>
+                    <i className="fa-solid fa-lock absolute left-4 top-[46px] opacity-40 text-sm"></i>
+                    <input
+                      required
+                      type="password"
+                      value={password}
+                      onChange={e => {setPassword(e.target.value); setLoginError('');}}
+                      placeholder="Enter your password..."
+                      className="w-full pl-12 pr-6 py-4 bg-white/15 border-2 border-white/20 focus:border-white rounded-[16px] font-medium text-base placeholder:text-white/40 outline-none transition-all focus:bg-white/20"
+                    />
+                 </div>
+
+                 {loginError && (
+                    <div className="p-3 rounded-[12px] bg-red-500/20 border border-red-300/50 text-red-100 text-xs font-black flex items-center gap-2">
+                      <i className="fa-solid fa-exclamation-circle"></i> {loginError}
+                    </div>
+                 )}
+
+                 {/* Login Button */}
+                 <button
+                   type="submit"
+                   className="w-full py-4 rounded-[16px] bg-white text-alaga-blue font-black uppercase tracking-widest text-sm hover:shadow-lg hover:shadow-white/50 hover:scale-105 transition-all active:scale-95 flex items-center justify-center gap-2"
+                 >
+                    <i className="fa-solid fa-arrow-right-to-bracket"></i> Log In
+                 </button>
+              </form>
+
+              {/* Divider */}
+              <div className="flex items-center gap-4">
+                 <div className="h-px flex-1 bg-white/20"></div>
+                 <p className="text-[11px] font-black uppercase opacity-60">New Here?</p>
+                 <div className="h-px flex-1 bg-white/20"></div>
+              </div>
+
+              {/* Sign Up Button */}
+              <button
+                onClick={() => {
+                  setShowSignupPopover(true);
+                  setEmail('');
+                  setPassword('');
+                  setLoginError('');
+                }}
+                className="w-full py-4 rounded-[16px] bg-alaga-gold text-alaga-navy font-black uppercase tracking-widest text-sm hover:shadow-lg hover:shadow-alaga-gold/50 hover:scale-105 transition-all active:scale-95 flex items-center justify-center gap-2"
+              >
+                 <i className="fa-solid fa-user-plus"></i> Start Official Registration
+              </button>
+           </div>
+        </div>
+      </section>
+
+      {showServicePopover && selectedService && (
+        <div className="fixed inset-0 z-[460] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-alaga-charcoal rounded-[24px] w-full max-w-3xl p-6 shadow-[0_40px_100px_rgba(0,0,0,0.5)] border border-white/10 overflow-y-auto max-h-[80vh]">
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="inline-flex items-center gap-3 px-3 py-1 bg-alaga-blue/10 text-alaga-blue rounded-full mb-3">
+                  <i className={`fa-solid ${selectedService.id === 'id' ? 'fa-id-card-clip' : selectedService.id === 'philhealth' ? 'fa-shield-halved' : selectedService.id === 'medical' ? 'fa-hospital' : selectedService.id === 'devices' ? 'fa-wheelchair' : 'fa-briefcase'}`}></i>
+                  <h3 className="text-2xl font-black ml-2">{selectedService.title}</h3>
+                </div>
+                <p className="opacity-60 mt-2">{selectedService.desc}</p>
+              </div>
+              <button onClick={() => setShowServicePopover(false)} className="text-sm text-gray-500">Close</button>
+            </div>
+
+            <div className="mt-6 space-y-4">
+              {selectedService.id === 'devices' && devices.map((d: AssistiveDevice) => (
+                <div key={d.id} className="flex items-center gap-4 p-3 rounded-lg border border-gray-100">
+                  {d.photoUrl ? (
+                    <Image src={d.photoUrl} alt={d.name} width={64} height={48} className="object-cover rounded" />
+                  ) : (
+                    <div className="w-16 h-12 rounded bg-gray-100" aria-hidden />
+                  )}
+                  <div className="flex-1">
+                    <div className="font-black">{d.name}</div>
+                    <div className="text-xs opacity-60">{d.description || d.overview || ''}</div>
+                  </div>
+                  <button onClick={() => { if (currentUser) { const req: ProgramAvailment = { id: `req-${Date.now()}`, userId: currentUser.id, programType: 'Device', title: d.name || 'Device Request', status: 'Pending', dateApplied: new Date().toISOString(), details: '', requestedItemId: d.id }; addProgramRequest(req); setShowServicePopover(false); } else { handleApplyAttempt({ id: d.id, title: d.name }); } }} className="px-3 py-2 bg-alaga-blue text-white rounded text-xs font-black">Request</button>
+                </div>
+              ))}
+
+              {selectedService.id === 'medical' && medicalServices.map((m: MedicalService) => (
+                <div key={m.id} className="flex items-center gap-4 p-3 rounded-lg border border-gray-100">
+                  {m.photoUrl ? (
+                    <Image src={m.photoUrl} alt={m.name} width={64} height={48} className="object-cover rounded" />
+                  ) : (
+                    <div className="w-16 h-12 rounded bg-gray-100" aria-hidden />
+                  )}
+                  <div className="flex-1">
+                    <div className="font-black">{m.name}</div>
+                    <div className="text-xs opacity-60">{m.assistanceDetail || m.overview || ''}</div>
+                  </div>
+                  <button onClick={() => { if (currentUser) { const req: ProgramAvailment = { id: `req-${Date.now()}`, userId: currentUser.id, programType: 'Medical', title: m.name || 'Medical Request', status: 'Pending', dateApplied: new Date().toISOString(), details: '', requestedItemId: m.id }; addProgramRequest(req); setShowServicePopover(false); } else { handleApplyAttempt({ id: m.id, title: m.name }); } }} className="px-3 py-2 bg-red-500 text-white rounded text-xs font-black">Request</button>
+                </div>
+              ))}
+
+              {selectedService.id === 'livelihood' && livelihoodPrograms.map((l: LivelihoodProgram) => (
+                <div key={l.id} className="flex items-center gap-4 p-3 rounded-lg border border-gray-100">
+                  {l.photoUrl ? (
+                    <Image src={l.photoUrl} alt={l.photoAlt || l.title} width={64} height={48} className="object-cover rounded" />
+                  ) : (
+                    <div className="w-16 h-12 rounded bg-gray-100" aria-hidden />
+                  )}
+                  <div className="flex-1">
+                    <div className="font-black">{l.title}</div>
+                    <div className="text-xs opacity-60">{(l as unknown as { desc?: string; description?: string }).desc || (l as unknown as { desc?: string; description?: string }).description || l.overview || ''}</div>
+                  </div>
+                  <button onClick={() => { if (currentUser) { const req: ProgramAvailment = { id: `req-${Date.now()}`, userId: currentUser.id, programType: 'Livelihood', title: l.title || 'Livelihood Request', status: 'Pending', dateApplied: new Date().toISOString(), details: '', requestedItemId: l.id }; addProgramRequest(req); setShowServicePopover(false); } else { handleApplyAttempt({ id: l.id, title: l.title }); } }} className="px-3 py-2 bg-alaga-teal text-white rounded text-xs font-black">Request</button>
+                </div>
+              ))}
+
+              {selectedService.id === 'medical' && medicalServices.map((m: MedicalService) => (
+                <div key={m.id} className="flex items-center gap-4 p-3 rounded-lg border border-gray-100">
+                  {m.photoUrl ? (
+                    <Image src={m.photoUrl} width={64} height={48} alt={m.name} className="w-16 h-12 object-cover rounded" />
+                  ) : (
+                    <div className="w-16 h-12 rounded bg-gray-100" aria-hidden />
+                  )}
+                  <div className="flex-1">
+                    <div className="font-black">{m.name}</div>
+                    <div className="text-xs opacity-60">{m.assistanceDetail || m.overview || ''}</div>
+                  </div>
+                  <button onClick={() => { if (currentUser) { const req: ProgramAvailment = { id: `req-${Date.now()}`, userId: currentUser.id, programType: 'Medical', title: m.name || 'Medical Request', status: 'Pending', dateApplied: new Date().toISOString(), details: '', requestedItemId: m.id }; addProgramRequest(req); setShowServicePopover(false); } else { handleApplyAttempt({ id: m.id, title: m.name }); } }} className="px-3 py-2 bg-red-500 text-white rounded text-xs font-black">Request</button>
+                </div>
+              ))}
+
+              {selectedService.id === 'livelihood' && livelihoodPrograms.map((l: LivelihoodProgram) => (
+                <div key={l.id} className="flex items-center gap-4 p-3 rounded-lg border border-gray-100">
+                  {l.photoUrl ? (
+                    <Image src={l.photoUrl} width={64} height={48} alt={l.photoAlt || l.title} className="w-16 h-12 object-cover rounded" />
+                  ) : (
+                    <div className="w-16 h-12 rounded bg-gray-100" aria-hidden />
+                  )}
+                  <div className="flex-1">
+                    <div className="font-black">{l.title}</div>
+                    <div className="text-xs opacity-60">{(l as unknown as { desc?: string; description?: string }).desc || (l as unknown as { desc?: string; description?: string }).description || l.overview || ''}</div>
+                  </div>
+                  <button onClick={() => { if (currentUser) { const req: ProgramAvailment = { id: `req-${Date.now()}`, userId: currentUser.id, programType: 'Livelihood', title: l.title || 'Livelihood Request', status: 'Pending', dateApplied: new Date().toISOString(), details: '', requestedItemId: l.id }; addProgramRequest(req); setShowServicePopover(false); } else { handleApplyAttempt({ id: l.id, title: l.title }); } }} className="px-3 py-2 bg-alaga-teal text-white rounded text-xs font-black">Request</button>
+                </div>
+              ))}
+
+              {selectedService.id === 'philhealth' && (
+                <div className="p-4 rounded-lg border border-gray-100">
+                  <p className="opacity-60 text-sm">Sponsored PhilHealth enrollment and benefit assistance. To apply, please register or log in and follow the PhilHealth enrollment workflow.</p>
+              <div className="mt-6 flex items-center gap-3"><button onClick={() => { if (currentUser) { const req: ProgramAvailment = { id: `req-${Date.now()}`, userId: currentUser.id, programType: 'PhilHealth', title: 'PhilHealth Enrollment', status: 'Pending', dateApplied: new Date().toISOString(), details: '' }; addProgramRequest(req); setShowServicePopover(false); } else { handleApplyAttempt(null); } }} className="px-4 py-2 bg-alaga-gold text-alaga-navy rounded-xl font-black text-xs">Request Enrollment</button><button onClick={() => setShowServicePopover(false)} className="px-4 py-2 border border-gray-200 rounded-xl text-xs">Close</button></div>
+                </div>
+              )}
+
+              {selectedService.id === 'id' && (
+                <div className="p-4 rounded-lg border border-gray-100">
+                  <div className="flex items-start gap-4">
+                    <div className="w-16 h-16 bg-alaga-blue/10 text-alaga-blue rounded-lg flex items-center justify-center text-2xl"><i className="fa-solid fa-id-card-clip"></i></div>
+                    <div>
+                      <div className="font-black text-lg">Official PWD ID Issuance</div>
+                      <div className="opacity-60 text-sm mt-1">Apply for a new, replacement, or renewal of your official PWD identification. You will need identification documents and supporting documents as required by the municipal office.</div>
+                    </div>
+                  </div>
+                  <div className="mt-6 space-y-3">
+                    <div className="flex items-center justify-between p-3 rounded border border-gray-100">
+                      <div>
+                        <div className="font-black">New PWD ID Issuance</div>
+                        <div className="text-xs opacity-60">Apply for your first official Municipal PWD ID.</div>
+                      </div>
+                      <button onClick={() => { if (currentUser) { const req: ProgramAvailment = { id: `req-${Date.now()}`, userId: currentUser.id, programType: 'ID', title: 'New PWD ID Issuance', status: 'Pending', dateApplied: new Date().toISOString(), details: '' }; addProgramRequest(req); setShowServicePopover(false); } else { handleApplyAttempt({ title: 'New PWD ID Issuance' }); } }} className="px-3 py-2 bg-alaga-blue text-white rounded text-xs font-black">Apply</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showApplyPopover && (
+        <div className="fixed inset-0 z-[470] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-alaga-charcoal rounded-[24px] w-full max-w-md p-6 shadow-[0_40px_80px_rgba(0,0,0,0.4)] border border-white/10">
+            <h4 className="font-black text-lg">Please sign in to apply</h4>
+            <p className="opacity-60 text-sm mt-2">To request this service{applyTarget ? `: ${applyTarget.title}` : ''}, you need to be logged in. Please register or login to continue.</p>
+            <div className="mt-6 flex items-center gap-3">
+              <button onClick={() => { scrollTo(joinRef); setShowApplyPopover(false); setShowServicePopover(false); setShowLoginPopover(true); }} className="px-4 py-2 bg-alaga-blue text-white rounded-xl font-black">Scroll to Login</button>
+              <button onClick={() => { setShowApplyPopover(false); }} className="px-4 py-2 border border-gray-200 rounded-xl">Dismiss</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {aboutService && (
+        <div className="fixed inset-0 z-[450] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-alaga-charcoal rounded-[32px] w-full max-w-2xl p-8 shadow-[0_40px_100px_rgba(0,0,0,0.5)] border border-white/10">
+             <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-2xl font-black">{aboutService.title}</h3>
+                  <p className="opacity-60 mt-2">{aboutService.description}</p>
+                </div>
+                <button onClick={() => setAboutService(null)} className="text-sm text-gray-500">Close</button>
+             </div>
+             <div className="mt-6 flex items-center gap-4">
+                <button onClick={() => { scrollTo(joinRef); setAboutService(null); }} className="px-6 py-3 bg-alaga-blue text-white rounded-[12px] font-black">Register / Login</button>
+                <button onClick={() => setAboutService(null)} className="px-6 py-3 border border-gray-200 rounded-[12px]">Dismiss</button>
+             </div>
+          </div>
+        </div>
+      )}
+
+      <footer className="py-20 px-6 text-center opacity-30">
+        <p className="text-[10px] font-black uppercase tracking-[0.5em]">La Trinidad Municipal Government • Benguet Province</p>
+      </footer>
+
+      {showLoginPopover && (
+        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+           <div className="bg-white dark:bg-alaga-charcoal rounded-[48px] w-full max-w-md shadow-[0_40px_100px_rgba(0,0,0,0.5)] overflow-hidden animate-in zoom-in-95 duration-300 relative border border-white/10">
+              <button
+                onClick={() => {
+                  setShowLoginPopover(false);
+                  setEmail('');
+                  setPassword('');
+                  setLoginError('');
+                }}
+                className="absolute top-8 right-8 w-12 h-12 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all z-20"
+              >
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+
+              <div className="p-12 md:p-16 space-y-8">
+                 <div className="text-center space-y-2">
+                    <h3 className="text-3xl font-black">System Login</h3>
+                    <p className="opacity-60 font-medium text-sm">Access your AlagaLink account</p>
+                 </div>
+
+                 <form onSubmit={handleLogin} className="space-y-6">
+                    <div>
+                      <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Email or Username</label>
+                      <input
+                        type="text"
+                        value={email}
+                        onChange={(e) => {setEmail(e.target.value); setLoginError('');}}
+                        placeholder="Enter your email or user ID"
+                        className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Password</label>
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => {setPassword(e.target.value); setLoginError('');}}
+                        placeholder="Enter your password"
+                        className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium"
+                      />
+                    </div>
+
+                    {loginError && (
+                      <div className="p-4 rounded-[16px] bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-sm font-black">
+                        <i className="fa-solid fa-exclamation-circle mr-2"></i> {loginError}
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      className="w-full py-4 rounded-[20px] bg-alaga-blue text-white font-black uppercase tracking-widest text-sm hover:shadow-lg hover:shadow-alaga-blue/50 transition-all active:scale-95"
+                    >
+                      <i className="fa-solid fa-arrow-right-to-bracket mr-2"></i> Log In Now
+                    </button>
+                 </form>
+
+                 <div className="text-center text-xs opacity-60 font-medium">
+                    Don&apos;t have an account?
+                    <button
+                      onClick={() => {
+                        setShowLoginPopover(false);
+                        setShowSignupPopover(true);
+                        setEmail('');
+                        setPassword('');
+                        setLoginError('');
+                      }}
+                      className="text-alaga-teal font-black ml-1 hover:underline"
+                    >
+                      Sign up here
+                    </button>
+                 </div>
+              </div>
+           </div>
+        </div>
+      )}
+
+      {showPWDIDPopover && (
+        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+           <div className="bg-white dark:bg-alaga-charcoal rounded-[48px] w-full max-w-3xl shadow-[0_40px_100px_rgba(0,0,0,0.5)] overflow-hidden animate-in zoom-in-95 duration-300 relative border border-white/10">
+              <button
+                onClick={() => setShowPWDIDPopover(false)}
+                className="absolute top-8 right-8 w-12 h-12 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all z-20"
+              >
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+
+              <div className="p-12 md:p-20 space-y-12">
+                 <div className="text-center space-y-4">
+                    <h3 className="text-4xl font-black">Register for PWD ID</h3>
+                    <p className="opacity-60 font-medium">Select your registration type below.</p>
+                 </div>
+
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div
+                      onClick={() => {
+                        setShowPWDIDPopover(false);
+                        setActiveRegistration('User');
+                      }}
+                      className="p-10 rounded-[32px] bg-alaga-teal/5 border-4 border-transparent hover:border-alaga-teal cursor-pointer transition-all group relative overflow-hidden"
+                    >
+                       <i className="fa-solid fa-id-card text-5xl text-alaga-teal mb-6 group-hover:scale-110 transition-transform"></i>
+                       <h4 className="text-2xl font-black mb-2">PWD Applicant</h4>
+                       <p className="text-sm opacity-50 font-medium leading-relaxed">Register as a Person with Disabilities to access benefits and services.</p>
+                       <i className="fa-solid fa-id-card absolute -right-6 -bottom-6 text-[120px] opacity-5 -rotate-12"></i>
+                    </div>
+
+                    <div
+                      onClick={() => {
+                        setShowPWDIDPopover(false);
+                        setActiveRegistration('Staff');
+                      }}
+                      className="p-10 rounded-[32px] bg-alaga-blue/5 border-4 border-transparent hover:border-alaga-blue cursor-pointer transition-all group relative overflow-hidden"
+                    >
+                       <i className="fa-solid fa-shield-halved text-5xl text-alaga-blue mb-6 group-hover:scale-110 transition-transform"></i>
+                       <h4 className="text-2xl font-black mb-2">Staff/Admin</h4>
+                       <p className="text-sm opacity-50 font-medium leading-relaxed">Register as administrative staff to manage PDAO and MSWDO operations.</p>
+                       <i className="fa-solid fa-shield-halved absolute -right-6 -bottom-6 text-[120px] opacity-5 -rotate-12"></i>
+                    </div>
+                 </div>
+              </div>
+           </div>
+        </div>
+      )}
+
+      {showSignupPopover && (
+        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+           <div className="bg-white dark:bg-alaga-charcoal rounded-[48px] w-full max-w-3xl shadow-[0_40px_100px_rgba(0,0,0,0.5)] overflow-hidden animate-in zoom-in-95 duration-300 relative border border-white/10">
+              <button
+                onClick={() => setShowSignupPopover(false)}
+                className="absolute top-8 right-8 w-12 h-12 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all z-20"
+              >
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+
+              <div className="p-12 md:p-20 space-y-12">
+                 <div className="text-center space-y-4">
+                    <h3 className="text-4xl font-black">Registration Path</h3>
+                    <p className="opacity-60 font-medium">Select the form most appropriate for your status.</p>
+                 </div>
+
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div
+                      onClick={() => setActiveRegistration('User')}
+                      className="p-10 rounded-[32px] bg-alaga-teal/5 border-4 border-transparent hover:border-alaga-teal cursor-pointer transition-all group relative overflow-hidden"
+                    >
+                       <i className="fa-solid fa-person-rays text-5xl text-alaga-teal mb-6 group-hover:scale-110 transition-transform"></i>
+                       <h4 className="text-2xl font-black mb-2">Member Registry</h4>
+                       <p className="text-sm opacity-50 font-medium leading-relaxed">For Persons with Disabilities and Children with Special Needs residing in La Trinidad.</p>
+                       <i className="fa-solid fa-person-rays absolute -right-6 -bottom-6 text-[120px] opacity-5 -rotate-12"></i>
+                    </div>
+
+                    <div
+                      onClick={() => setActiveRegistration('Staff')}
+                      className="p-10 rounded-[32px] bg-alaga-blue/5 border-4 border-transparent hover:border-alaga-blue cursor-pointer transition-all group relative overflow-hidden"
+                    >
+                       <i className="fa-solid fa-shield-halved text-5xl text-alaga-blue mb-6 group-hover:scale-110 transition-transform"></i>
+                       <h4 className="text-2xl font-black mb-2">Staff Access</h4>
+                       <p className="text-sm opacity-50 font-medium leading-relaxed">For administrative officers and municipal staff of PDAO or MSWDO.</p>
+                       <i className="fa-solid fa-shield-halved absolute -right-6 -bottom-6 text-[120px] opacity-5 -rotate-12"></i>
+                    </div>
+                 </div>
+              </div>
+           </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default LandingPage;

@@ -1,0 +1,71 @@
+<svg viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="bgGradient4" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFEBEE;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFCDD2;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <rect width="800" height="600" fill="url(#bgGradient4)"/>
+  
+  <!-- Shield icon -->
+  <g transform="translate(150, 80)">
+    <path d="M 50 30 L 30 50 L 30 120 Q 50 140 50 140 Q 70 140 70 120 L 70 50 Z" 
+          fill="none" stroke="#D32F2F" stroke-width="6"/>
+    <!-- Checkmark inside -->
+    <path d="M 35 100 L 45 115 L 65 85" fill="none" stroke="#D32F2F" stroke-width="6" stroke-linecap="round"/>
+  </g>
+
+  <!-- People network icon -->
+  <g transform="translate(400, 100)">
+    <!-- Central person -->
+    <circle cx="50" cy="20" r="8" fill="#D32F2F"/>
+    <path d="M 40 32 L 60 32 L 55 50 L 45 50 Z" fill="#D32F2F"/>
+    <!-- Connected people -->
+    <circle cx="20" cy="60" r="6" fill="#D32F2F" opacity="0.8"/>
+    <circle cx="80" cy="60" r="6" fill="#D32F2F" opacity="0.8"/>
+    <circle cx="30" cy="100" r="6" fill="#D32F2F" opacity="0.8"/>
+    <circle cx="70" cy="100" r="6" fill="#D32F2F" opacity="0.8"/>
+    <!-- Connection lines -->
+    <line x1="50" y1="28" x2="20" y2="54" stroke="#D32F2F" stroke-width="2" opacity="0.6"/>
+    <line x1="50" y1="28" x2="80" y2="54" stroke="#D32F2F" stroke-width="2" opacity="0.6"/>
+    <line x1="50" y1="50" x2="30" y2="94" stroke="#D32F2F" stroke-width="2" opacity="0.6"/>
+    <line x1="50" y1="50" x2="70" y2="94" stroke="#D32F2F" stroke-width="2" opacity="0.6"/>
+  </g>
+
+  <!-- Alert bell -->
+  <g transform="translate(670, 100)">
+    <!-- Bell body -->
+    <path d="M 30 25 L 30 35 Q 30 50 45 50 Q 60 50 60 35 L 60 25" 
+          fill="none" stroke="#D32F2F" stroke-width="5" stroke-linecap="round"/>
+    <!-- Bell clapper -->
+    <circle cx="45" cy="55" r="5" fill="#D32F2F"/>
+    <!-- Alert wave -->
+    <circle cx="85" cy="20" r="8" fill="none" stroke="#D32F2F" stroke-width="3" opacity="0.8"/>
+    <circle cx="90" cy="20" r="12" fill="none" stroke="#D32F2F" stroke-width="2" opacity="0.6"/>
+  </g>
+
+  <!-- Title -->
+  <text x="400" y="330" font-size="48" font-weight="bold" text-anchor="middle" fill="#D32F2F">
+    Community Safety
+  </text>
+  
+  <!-- Subtitle -->
+  <text x="400" y="380" font-size="24" text-anchor="middle" fill="#C62828" opacity="0.8">
+    Lost & Found • Alert System • Rapid Recovery
+  </text>
+  
+  <!-- Features -->
+  <g>
+    <text x="400" y="430" font-size="18" text-anchor="middle" fill="#D32F2F" font-weight="bold">
+      Key Features:
+    </text>
+    <text x="400" y="465" font-size="14" text-anchor="middle" fill="#C62828">
+      Direct Registry Integration • Real-time Alerts
+    </text>
+    <text x="400" y="490" font-size="14" text-anchor="middle" fill="#C62828">
+      Verified Reporting • Community Coordination
+    </text>
+  </g>
+</svg>

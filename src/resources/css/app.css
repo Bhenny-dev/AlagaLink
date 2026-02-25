@@ -1,0 +1,185 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+    overflow-y: auto;
+}
+
+/*
+  Migrated styles from Old Project/styles/globals.css
+  (Font links are injected via app.blade.php instead of CSS @import).
+*/
+
+@layer base {
+    html {
+        color-scheme: light dark;
+    }
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: #ffffff;
+        color: #1f2937;
+        transition: background-color 0.3s, color 0.3s;
+    }
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        color: #1f2937;
+    }
+    a {
+        color: #2546f0;
+    }
+    a:hover {
+        color: rgba(37, 70, 240, 0.8);
+    }
+    input,
+    textarea,
+    select {
+        background-color: #f8f9fa;
+        color: #1f2937;
+        border-color: #e5e7eb;
+        border: 1px solid #e5e7eb;
+        transition: all 0.3s;
+    }
+    input:focus,
+    textarea:focus,
+    select:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(37, 70, 240, 0.1);
+    }
+}
+
+@layer base {
+    .dark {
+        color-scheme: dark;
+    }
+    .dark body {
+        background-color: #0f172a;
+        color: #f1f5f9;
+    }
+    .dark h1,
+    .dark h2,
+    .dark h3,
+    .dark h4,
+    .dark h5,
+    .dark h6 {
+        color: #f1f5f9;
+    }
+    .dark a {
+        color: #60a5fa;
+    }
+    .dark a:hover {
+        color: rgba(96, 165, 250, 0.6);
+    }
+    .dark input,
+    .dark textarea,
+    .dark select {
+        background-color: #1e293b;
+        color: #f1f5f9;
+        border-color: #334155;
+    }
+    .dark input:focus,
+    .dark textarea:focus,
+    .dark select:focus {
+        box-shadow: 0 0 0 3px rgba(37, 70, 240, 0.2);
+    }
+}
+
+@layer components {
+    .card {
+        background-color: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        transition: all 0.3s;
+    }
+    .dark .card {
+        background-color: #1e293b;
+        border-color: #334155;
+    }
+    .card-elevated {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    .card-elevated:hover {
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+    }
+    .dark .card-elevated {
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    .inflated-card {
+        background-color: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.08), 0 4px 15px -5px rgba(0, 0, 0, 0.04);
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .dark .inflated-card {
+        background-color: #1e293b;
+        border-color: #334155;
+        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.4), 0 4px 15px -5px rgba(0, 0, 0, 0.2);
+    }
+    @screen md {
+        .inflated-card {
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.1), 0 10px 20px -5px rgba(0, 0, 0, 0.04);
+        }
+        .dark .inflated-card {
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.4), 0 10px 20px -5px rgba(0, 0, 0, 0.2);
+        }
+    }
+    .inflated-card:hover {
+        transform: translateY(-4px) scale(1.05);
+    }
+    @screen md {
+        .inflated-card:hover {
+            transform: translateY(-8px) scale(1.1);
+            box-shadow: 0 30px 60px -12px rgba(37, 70, 240, 0.25);
+        }
+    }
+
+    .glow-icon {
+        filter: drop-shadow(0 0 8px rgba(37, 70, 240, 0.4));
+    }
+    .glow-icon-gold {
+        filter: drop-shadow(0 0 8px rgba(255, 212, 59, 0.5));
+    }
+
+    .text-3d {
+        color: #1f2937;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        letter-spacing: -0.02em;
+    }
+    .dark .text-3d {
+        color: #f1f5f9;
+        text-shadow: 0 1px 2px rgba(255, 255, 255, 0.05);
+    }
+    @screen md {
+        .text-3d {
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .dark .text-3d {
+            text-shadow: 0 2px 4px rgba(255, 255, 255, 0.1);
+        }
+    }
+
+    .inner-glow {
+        box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.2);
+    }
+    .dark .inner-glow {
+        box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.05);
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+    .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    .glow-about {
+        filter: drop-shadow(0 0 18px rgba(37, 70, 240, 0.35));
+    }
+}

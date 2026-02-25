@@ -1,0 +1,72 @@
+
+import type { Notification } from '../../types';
+
+export const MOCK_NOTIFICATION_HISTORY: Notification[] = [
+  // User Targeted (LT-PWD-1001)
+  {
+    id: 'n-1',
+    userId: 'LT-PWD-1001',
+    title: 'ID Ready for Claiming',
+    message: 'Good day! Your PWD ID is now ready for claiming at the PDAO Office, Km. 5.',
+    type: 'Success',
+    date: '2023-10-27T10:00:00Z',
+    isRead: false,
+    link: 'programs:ID'
+    ,
+    programType: 'ID'
+  },
+  {
+    id: 'n-2',
+    userId: 'LT-PWD-1001',
+    title: 'PhilHealth Update',
+    message: 'Your PhilHealth Sponsored Enrollment request has been received and is being processed.',
+    type: 'Info',
+    date: '2023-10-26T14:30:00Z',
+    isRead: true,
+    link: 'programs:PhilHealth'
+    ,
+    programType: 'PhilHealth'
+  },
+  // Admin Targeted Alerts
+  {
+    id: 'n-3',
+    targetRole: 'Admin',
+    title: 'New Missing Report',
+    message: 'A new missing PWD report has been filed for Ronel Olsim. Please review the case specifics.',
+    type: 'Urgent',
+    date: '2023-10-27T08:15:00Z',
+    isRead: false,
+    link: 'lost-found:report:r-1'
+  },
+  {
+    id: 'n-admin-1',
+    targetRole: 'Admin',
+    title: 'Evaluation Queue',
+    message: 'There are 5 pending ID applications awaiting verification from Pico and Poblacion.',
+    type: 'Warning',
+    date: '2023-10-27T09:00:00Z',
+    isRead: false,
+    link: 'programs:requests',
+    programType: 'ID'
+  },
+  // Super Admin Exclusive Logs
+  {
+    id: 'n-sa-1',
+    targetRole: 'SuperAdmin',
+    title: 'System Security Log',
+    message: 'Cloud Registry Backup completed successfully. Data integrity verified.',
+    type: 'Success',
+    date: '2023-10-27T00:00:00Z',
+    isRead: true
+  },
+  {
+    id: 'n-sa-2',
+    targetRole: 'SuperAdmin',
+    title: 'Staff Registry Update',
+    message: 'New Admin account "Eliza Torres" is pending activation. Review credentials in Staff Registry.',
+    type: 'Info',
+    date: '2023-10-26T16:00:00Z',
+    isRead: false,
+    link: 'members:pending'
+  }
+];

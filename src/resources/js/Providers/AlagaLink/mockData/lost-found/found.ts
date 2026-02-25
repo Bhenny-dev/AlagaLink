@@ -1,0 +1,77 @@
+
+import { LostReport } from '../../types';
+
+export const MOCK_FOUND: LostReport[] = [
+  {
+    id: 'r-3',
+    userId: 'LT-PWD-1020',
+    name: 'Daryl Gacayan',
+    reporterId: 'LT-PWD-1000',
+    timeMissing: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString(),
+    lastSeen: 'Strawberry Farm',
+    description: 'Red cap and hoodie.',
+    clothes: 'Red cap, Gray hoodie',
+    height: '5\'2"',
+    bodyType: 'Slim',
+    dissemination: { radio: true, socialMedia: true, context: 'Safe.' },
+    status: 'Found',
+    isPosted: true,
+    photoUrl: 'https://randomuser.me/api/portraits/men/20.jpg',
+    missingNarrative: { what: "Lost at farm", when: "Oct 20", why: "Crowd", how: "Separated" },
+    foundNarrative: { what: "Found in Pico", when: "Oct 21", why: "Neighbor recognized post", how: "Called PDAO" }
+  },
+  {
+    id: 'r-8',
+    userId: 'LT-PWD-1021',
+    name: 'Angela Medina',
+    reporterId: 'LT-PWD-1005',
+    timeMissing: new Date(Date.now() - 36 * 60 * 60 * 1000).toISOString(),
+    lastSeen: 'Downtown Shopping Mall',
+    description: 'Young woman with intellectual disability, wearing blue jacket.',
+    clothes: 'Blue jacket, white pants',
+    height: '5\'3"',
+    bodyType: 'Average',
+    dissemination: { radio: true, socialMedia: true, context: 'Safe and with authorities.' },
+    status: 'Found',
+    isPosted: true,
+    photoUrl: 'https://randomuser.me/api/portraits/women/8.jpg',
+    missingNarrative: { what: "Missing from mall", when: "1.5 days ago", why: "Separated from family", how: "Lost in crowd during shopping" },
+    foundNarrative: { what: "Found by security", when: "Yesterday", why: "Security identified from lost report", how: "Taken to PDAO office" }
+  },
+  {
+    id: 'r-9',
+    userId: 'LT-PWD-1022',
+    name: 'Luis Manzo',
+    reporterId: 'LT-PWD-1006',
+    timeMissing: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
+    lastSeen: 'Barangay Fiesta Grounds',
+    description: 'Male with hearing impairment, participated in community event.',
+    clothes: 'Yellow festival shirt, denim jeans',
+    height: '5\'6"',
+    bodyType: 'Athletic',
+    dissemination: { radio: true, socialMedia: true, context: 'Located safely at community center.' },
+    status: 'Found',
+    isPosted: true,
+    photoUrl: 'https://randomuser.me/api/portraits/men/25.jpg',
+    missingNarrative: { what: "Missing during fiesta", when: "2 days ago", why: "Communication barrier", how: "Did not check in with group" },
+    foundNarrative: { what: "Found at community center", when: "Yesterday", why: "Went there looking for event", how: "Barangay volunteers contacted PDAO" }
+  },
+  {
+    id: 'r-10',
+    userId: 'LT-PWD-1023',
+    name: 'Cristina Ramos',
+    reporterId: 'LT-PWD-1007',
+    timeMissing: new Date(Date.now() - 60 * 60 * 60 * 1000).toISOString(),
+    lastSeen: 'Parish Church Area',
+    description: 'Female with mobility issues, was attending mass.',
+    clothes: 'Purple dress, church shawl',
+    height: '5\'2"',
+    bodyType: 'Average',
+    dissemination: { radio: true, socialMedia: true, context: 'Safe. Located with church group.' },
+    status: 'Found',
+    isPosted: true,
+    photoUrl: 'https://randomuser.me/api/portraits/women/15.jpg',
+    missingNarrative: { what: "Missing after mass", when: "2.5 days ago", why: "Disoriented after service", how: "Left without family awareness" },
+    foundNarrative: { what: "Found at church hall", when: "Yesterday evening", why: "Was in fellowship area", how: "Priest contacted parish coordinator" }
+  }
+];
