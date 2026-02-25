@@ -29,6 +29,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ targetUser, anchorPosition, isE
     setSearchSignal,
     directMessages,
     sendDirectMessage,
+    loadDirectThread,
     users,
     reports,
     devices,
@@ -166,6 +167,43 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ targetUser, anchorPosition, isE
   useEffect(() => {
     scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight);
   }, [displayMessages]);
+
+  useEffect(() => {
+    if (!targetUser || !currentUser) return;
+
+    let isCancelled = false;
+    let intervalId: number | undefined;
+
+    const poll = async () => {
+      if (isCancelled) return;
+
+      // Compute thread key the same way as displayMessages does.
+      let threadKey: string;
+      const targetIsOffice = targetUser.id === OFFICE_ID;
+      const targetIsUser = targetUser?.role === 'User';
+
+      if (targetIsOffice) {
+        threadKey = [currentUser.id, OFFICE_ID].sort().join('_');
+      } else if (currentUser.role !== 'User' && targetIsUser) {
+        threadKey = [OFFICE_ID, targetUser.id].sort().join('_');
+      } else {
+        threadKey = [currentUser.id, targetUser.id].sort().join('_');
+      }
+
+      const existing = directMessages[threadKey] || [];
+      const lastTimestamp = existing.length ? existing[existing.length - 1].timestamp : undefined;
+
+      await loadDirectThread(targetUser.id, lastTimestamp);
+    };
+
+    poll();
+    intervalId = window.setInterval(poll, 2500);
+
+    return () => {
+      isCancelled = true;
+      if (intervalId) window.clearInterval(intervalId);
+    };
+  }, [targetUser, currentUser, loadDirectThread, directMessages]);
 
   const getMunicipalData = () => {
     const deviceIndex = devices.map(d => ({ id: d.id, name: d.name, type: 'Item', page: 'programs', section: 'Device', image: d.photoUrl }));

@@ -13,7 +13,7 @@ class RegistrationTest extends TestCase
     {
         $response = $this->get('/register');
 
-        $response->assertStatus(200);
+        $response->assertRedirect('/?section=signup');
     }
 
     public function test_new_users_can_register(): void
@@ -27,7 +27,7 @@ class RegistrationTest extends TestCase
 
         $this->assertGuest();
         $response
-            ->assertRedirect(route('login', absolute: false))
+            ->assertRedirect('/?section=login')
             ->assertSessionHas('status', 'Account created. Please log in.');
     }
 }

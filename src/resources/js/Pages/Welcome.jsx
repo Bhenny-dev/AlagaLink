@@ -6,6 +6,8 @@ import LandingPageRestored from '@/Components/AlagaLink/home/LandingPageRestored
 export default function Welcome({ auth }) {
     const isLoggedIn = !!auth?.user;
 
+    const section = new URLSearchParams(window.location.search).get('section');
+
     useEffect(() => {
         if (!isLoggedIn) return;
         router.visit(route('dashboard', {}, false));
@@ -22,7 +24,7 @@ export default function Welcome({ auth }) {
     return (
         <>
             <Head title="AlagaLink" />
-            <LandingPageRestored />
+            <LandingPageRestored initialSection={section} />
         </>
     );
 }

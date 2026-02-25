@@ -2,8 +2,10 @@
 
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { router } from '@inertiajs/react';
+import axios from 'axios';
 import {
   UserProfile,
+  DisabilityCategory,
   LostReport,
   FormSection,
   ProgramAvailment,
@@ -87,6 +89,7 @@ interface AppContextType {
   markNotificationRead: (id: string) => void;
   clearAllNotifications: () => void;
   sendDirectMessage: (toUserId: string, text: string) => void;
+  loadDirectThread: (peerId: string, afterTimestamp?: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -110,7 +113,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialLaravelUs
     if (!initialLaravelUser?.email) return null;
     const byEmail = seededUsers.find(u => u.email.toLowerCase() === initialLaravelUser.email.toLowerCase());
     if (byEmail) return byEmail;
-    return seededUsers.find(u => u.role === 'User') || seededUsers[0] || null;
+
+    const [firstName, ...rest] = (initialLaravelUser.name || '').trim().split(/\s+/).filter(Boolean);
+    const lastName = rest.join(' ');
+
+    return {
+      id: `laravel-${initialLaravelUser.id}`,
+      email: initialLaravelUser.email,
+      role: 'User',
+      firstName: firstName || initialLaravelUser.name || 'User',
+      lastName: lastName || '',
+      address: '',
+      birthDate: '',
+      provincialAddress: '',
+      civilStatus: '',
+      occupation: '',
+      sex: 'Other',
+      bloodType: '',
+      age: 0,
+      contactNumber: '',
+      disabilityCategory: DisabilityCategory.None,
+      familyComposition: [],
+      emergencyContact: {
+        name: '',
+        relation: '',
+        contact: '',
+      },
+      registrantType: 'Self',
+      status: 'Pending',
+      photoUrl: '',
+      customData: {},
+      history: {
+        lostAndFound: [],
+        programs: [],
+      },
+    } as UserProfile;
   }, [initialLaravelUser, seededUsers]);
 
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(seededUser);
@@ -294,35 +331,96 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialLaravelUs
     setCustomSections(customSections.filter(s => s.id !== id));
   };
 
+  const threadKeyFor = (peerId: string): { threadKey: string; meta?: DirectMessage['meta'] } | null => {
+    if (!currentUser) return null;
+
+    if (peerId === OFFICE_ID) {
+      return { threadKey: [currentUser.id, OFFICE_ID].sort().join('_') };
+    }
+
+    const recipientUser = users.find(u => u.id === peerId);
+
+    // Staff replying to a member: consolidate into OFFICE <-> member thread.
+    if (currentUser.role !== 'User' && recipientUser?.role === 'User') {
+      return {
+        threadKey: [OFFICE_ID, peerId].sort().join('_'),
+        meta: { viaOffice: true },
+      };
+    }
+
+    return { threadKey: [currentUser.id, peerId].sort().join('_') };
+  };
+
+  const loadDirectThread = async (peerId: string, afterTimestamp?: string) => {
+    if (!currentUser) return;
+    const computed = threadKeyFor(peerId);
+    if (!computed) return;
+
+    try {
+      const response = await axios.get('/api/direct-messages/thread/' + encodeURIComponent(peerId), {
+        params: afterTimestamp ? { after: afterTimestamp } : undefined,
+      });
+
+      const { threadKey, messages } = response.data || {};
+      if (!threadKey || !Array.isArray(messages)) return;
+
+      setDirectMessages(prev => {
+        const existing = prev[threadKey] || [];
+        if (!afterTimestamp) {
+          return { ...prev, [threadKey]: messages };
+        }
+
+        const existingIds = new Set(existing.map(m => m.id));
+        const merged = [...existing, ...messages.filter((m: DirectMessage) => !existingIds.has(m.id))];
+        return { ...prev, [threadKey]: merged };
+      });
+    } catch (e) {
+      // Silent fail; chat UI should remain usable offline.
+      console.error('Failed to load direct thread:', e);
+    }
+  };
+
   const sendDirectMessage = (toUserId: string, text: string) => {
     if (!currentUser) return;
 
-    // If an admin/superadmin is replying to a PWD, consolidate messages into the OFFICE thread
-    let recipientForThread = toUserId;
-    let meta: DirectMessage['meta'] | undefined = undefined;
+    const computed = threadKeyFor(toUserId);
+    if (!computed) return;
 
-    const recipientUser = users.find(u => u.id === toUserId);
-
-    if (currentUser.role !== 'User' && recipientUser && recipientUser.role === 'User') {
-      // Admin replying to a PWD: write into the OFFICE <-> PWD thread and mark meta
-      recipientForThread = OFFICE_ID;
-      meta = { viaOffice: true };
-    }
-
-    const threadKey = [recipientForThread, currentUser.id].sort().join('_');
-
-    const newMessage: DirectMessage = {
-      id: `msg-${Date.now()}`,
+    const threadKey = computed.threadKey;
+    const optimisticId = `tmp-${Date.now()}`;
+    const optimistic: DirectMessage = {
+      id: optimisticId,
       senderId: currentUser.id,
       text,
       timestamp: new Date().toISOString(),
-      meta
+      meta: computed.meta,
     };
 
     setDirectMessages(prev => ({
       ...prev,
-      [threadKey]: [...(prev[threadKey] || []), newMessage]
+      [threadKey]: [...(prev[threadKey] || []), optimistic],
     }));
+
+    axios.post('/api/direct-messages', {
+      toUserId,
+      text,
+      meta: computed.meta,
+    }).then((response) => {
+      const serverThreadKey = response?.data?.threadKey || threadKey;
+      const serverMessage = response?.data?.message;
+      if (!serverMessage?.id) return;
+
+      setDirectMessages(prev => {
+        const existing = prev[serverThreadKey] || [];
+        const replaced = existing.map(m => (m.id === optimisticId ? serverMessage : m));
+        const alreadyThere = replaced.some(m => m.id === serverMessage.id);
+        const finalList = alreadyThere ? replaced : [...replaced, serverMessage];
+        return { ...prev, [serverThreadKey]: finalList };
+      });
+    }).catch((e) => {
+      console.error('Failed to send direct message:', e);
+      // Keep optimistic message; user can retry by sending again.
+    });
   };
 
   const userNotifications = useMemo(() => {
@@ -345,7 +443,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialLaravelUs
       setGlobalSearchQuery, setGlobalSearchFilter, setSearchSignal, toggleTheme,
       login, loginWithPassword, loginById, logout, addReport, addUser, updateUser, updateProgramRequest, addProgramRequest,
       addCustomSection, removeCustomSection, markNotificationRead, clearAllNotifications,
-      sendDirectMessage
+      sendDirectMessage,
+      loadDirectThread
     }}>
       {children}
     </AppContext.Provider>

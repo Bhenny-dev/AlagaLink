@@ -1,11 +1,11 @@
 import React, { useState, useRef } from 'react';
 import Image from 'next/image';
-import { router, useForm } from '@inertiajs/react';
+import { useForm } from '@inertiajs/react';
 import { useAppContext } from '@/Providers/AlagaLink/AppContext';
-import { AssistiveDevice, MedicalService, LivelihoodProgram, ProgramAvailment } from '@/Providers/AlagaLink/types';
+import { AssistiveDevice, DisabilityCategory, MedicalService, LivelihoodProgram, ProgramAvailment } from '@/Providers/AlagaLink/types';
 import CommunityVigilCarousel from '../lost-found/CommunityVigilCarousel';
 
-const LandingPage: React.FC = () => {
+const LandingPage: React.FC<{ initialSection?: string | null }> = ({ initialSection = null }) => {
   const {
     addProgramRequest,
     searchSignal,
@@ -23,10 +23,28 @@ const LandingPage: React.FC = () => {
     remember: false,
   });
 
+  const signupForm = useForm({
+    account_type: '' as '' | 'pwd' | 'staff',
+    alagalink_role: '' as '' | 'User' | 'Admin',
+    first_name: '',
+    middle_name: '',
+    last_name: '',
+    name: '',
+    email: '',
+    contact_number: '',
+    address: '',
+    disability_category: DisabilityCategory.Autism as string,
+    staff_position: '',
+    password: '',
+    password_confirmation: '',
+  });
+
   const [showSignupPopover, setShowSignupPopover] = useState(false);
   const [showLoginPopover, setShowLoginPopover] = useState(false);
   const [showPWDIDPopover, setShowPWDIDPopover] = useState(false);
   const [loginError, setLoginError] = useState('');
+  const [signupError, setSignupError] = useState('');
+  const [registrationType, setRegistrationType] = useState<null | 'pwd' | 'staff'>(null);
 
   const programsRef = useRef<HTMLDivElement>(null);
   const missingRef = useRef<HTMLDivElement>(null);
@@ -65,6 +83,7 @@ const LandingPage: React.FC = () => {
       onSuccess: () => {
         setShowLoginPopover(false);
         setShowSignupPopover(false);
+        window.location.href = route('dashboard', {}, false);
       },
       onError: (errors) => {
         const message =
@@ -79,20 +98,98 @@ const LandingPage: React.FC = () => {
     });
   };
 
+  const handleSignup = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSignupError('');
+
+    const cleanedFirst = signupForm.data.first_name.trim();
+    const cleanedMiddle = signupForm.data.middle_name.trim();
+    const cleanedLast = signupForm.data.last_name.trim();
+    const computedName = [cleanedFirst, cleanedMiddle, cleanedLast].filter(Boolean).join(' ');
+
+    const accountType = registrationType;
+    const alagaRole = accountType === 'staff' ? 'Admin' : 'User';
+
+    if (!accountType) {
+      setSignupError('Please select a registration type (PWD or Staff) first.');
+      return;
+    }
+
+    signupForm.transform((data) => ({
+      ...data,
+      account_type: accountType,
+      alagalink_role: alagaRole,
+      name: computedName,
+      first_name: cleanedFirst,
+      middle_name: cleanedMiddle,
+      last_name: cleanedLast,
+    }));
+
+    signupForm.post('/register', {
+      onSuccess: () => {
+        setShowSignupPopover(false);
+        setRegistrationType(null);
+        setShowLoginPopover(true);
+      },
+      onError: (errors) => {
+        const message =
+          (typeof errors.first_name === 'string' && errors.first_name) ||
+          (typeof errors.last_name === 'string' && errors.last_name) ||
+          (typeof errors.name === 'string' && errors.name) ||
+          (typeof errors.email === 'string' && errors.email) ||
+          (typeof errors.contact_number === 'string' && errors.contact_number) ||
+          (typeof errors.address === 'string' && errors.address) ||
+          (typeof errors.disability_category === 'string' && errors.disability_category) ||
+          (typeof errors.password === 'string' && errors.password) ||
+          'Registration failed. Please review your details and try again.';
+        setSignupError(message);
+      },
+      onFinish: () => {
+        signupForm.reset('password', 'password_confirmation');
+      },
+    });
+  };
+
   const goToRegister = () => {
-    setShowSignupPopover(false);
     setShowPWDIDPopover(false);
     setShowLoginPopover(false);
     setLoginError('');
     loginForm.reset();
-    router.visit(route('register', {}, false));
+    setRegistrationType(null);
+    setShowPWDIDPopover(true);
   };
+
+  const beginRegistration = (type: 'pwd' | 'staff') => {
+    setRegistrationType(type);
+    setShowPWDIDPopover(false);
+    setShowLoginPopover(false);
+    setShowSignupPopover(true);
+    setSignupError('');
+
+    signupForm.setData('account_type', type);
+    signupForm.setData('alagalink_role', type === 'staff' ? 'Admin' : 'User');
+    signupForm.setData('disability_category', type === 'staff' ? DisabilityCategory.None : DisabilityCategory.Autism);
+  };
+
+  React.useEffect(() => {
+    if (initialSection === 'login') {
+      setShowLoginPopover(true);
+      setShowSignupPopover(false);
+      setShowPWDIDPopover(false);
+    }
+
+    if (initialSection === 'signup') {
+      setShowPWDIDPopover(true);
+      setShowLoginPopover(false);
+      setShowSignupPopover(false);
+    }
+  }, [initialSection]);
 
   React.useEffect(() => {
     if (!searchSignal) return;
     if (searchSignal.page === 'home') {
       if (searchSignal.section === 'login') setShowLoginPopover(true);
-      if (searchSignal.section === 'signup') setShowSignupPopover(true);
+      if (searchSignal.section === 'signup') setShowPWDIDPopover(true);
       setSearchSignal(null);
     }
   }, [searchSignal, setSearchSignal]);
@@ -277,7 +374,7 @@ const LandingPage: React.FC = () => {
               <button type="submit" disabled={loginForm.processing} className="w-full py-4 rounded-[16px] bg-white text-alaga-blue font-black uppercase tracking-widest text-sm hover:shadow-lg hover:shadow-white/50 hover:scale-105 transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-60 disabled:hover:scale-100"><i className="fa-solid fa-arrow-right-to-bracket"></i> Log In</button>
             </form>
             <div className="flex items-center gap-4"><div className="h-px flex-1 bg-white/20"></div><p className="text-[11px] font-black uppercase opacity-60">New Here?</p><div className="h-px flex-1 bg-white/20"></div></div>
-            <button onClick={() => { setShowSignupPopover(true); setLoginError(''); loginForm.reset(); }} className="w-full py-4 rounded-[16px] bg-alaga-gold text-alaga-navy font-black uppercase tracking-widest text-sm hover:shadow-lg hover:shadow-alaga-gold/50 hover:scale-105 transition-all active:scale-95 flex items-center justify-center gap-2"><i className="fa-solid fa-user-plus"></i> Start Official Registration</button>
+            <button onClick={() => { setShowPWDIDPopover(true); setLoginError(''); loginForm.reset(); }} className="w-full py-4 rounded-[16px] bg-alaga-gold text-alaga-navy font-black uppercase tracking-widest text-sm hover:shadow-lg hover:shadow-alaga-gold/50 hover:scale-105 transition-all active:scale-95 flex items-center justify-center gap-2"><i className="fa-solid fa-user-plus"></i> Start Official Registration</button>
           </div>
         </div>
       </section>
@@ -424,15 +521,200 @@ const LandingPage: React.FC = () => {
       <footer className="py-20 px-6 text-center opacity-30"><p className="text-[10px] font-black uppercase tracking-[0.5em]">La Trinidad Municipal Government • Benguet Province</p></footer>
 
       {showLoginPopover && (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300"><div className="bg-white dark:bg-alaga-charcoal rounded-[48px] w-full max-w-md shadow-[0_40px_100px_rgba(0,0,0,0.5)] overflow-hidden animate-in zoom-in-95 duration-300 relative border border-white/10"><button onClick={() => { setShowLoginPopover(false); setLoginError(''); loginForm.reset(); }} className="absolute top-8 right-8 w-12 h-12 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all z-20"><i className="fa-solid fa-xmark"></i></button><div className="p-12 md:p-16 space-y-8"><div className="text-center space-y-2"><h3 className="text-3xl font-black">System Login</h3><p className="opacity-60 font-medium text-sm">Access your AlagaLink account</p></div><form onSubmit={handleLogin} className="space-y-6"><div><label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Email</label><input type="email" value={loginForm.data.email} onChange={(e) => { loginForm.setData('email', e.target.value); setLoginError(''); }} placeholder="Enter your email" className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium" /></div><div><label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Password</label><input type="password" value={loginForm.data.password} onChange={(e) => { loginForm.setData('password', e.target.value); setLoginError(''); }} placeholder="Enter your password" className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium" /></div>{loginError && <div className="p-4 rounded-[16px] bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-sm font-black"><i className="fa-solid fa-exclamation-circle mr-2"></i> {loginError}</div>}<button type="submit" disabled={loginForm.processing} className="w-full py-4 rounded-[20px] bg-alaga-blue text-white font-black uppercase tracking-widest text-sm hover:shadow-lg hover:shadow-alaga-blue/50 transition-all active:scale-95 disabled:opacity-60"><i className="fa-solid fa-arrow-right-to-bracket mr-2"></i> Log In Now</button></form><div className="text-center text-xs opacity-60 font-medium">Don&apos;t have an account? <button onClick={() => { setShowLoginPopover(false); setShowSignupPopover(true); setLoginError(''); loginForm.reset(); }} className="text-alaga-teal font-black ml-1 hover:underline">Sign up here</button></div></div></div></div>
+        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300"><div className="bg-white dark:bg-alaga-charcoal rounded-[48px] w-full max-w-md shadow-[0_40px_100px_rgba(0,0,0,0.5)] overflow-hidden animate-in zoom-in-95 duration-300 relative border border-white/10"><button onClick={() => { setShowLoginPopover(false); setLoginError(''); loginForm.reset(); }} className="absolute top-8 right-8 w-12 h-12 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all z-20"><i className="fa-solid fa-xmark"></i></button><div className="p-12 md:p-16 space-y-8"><div className="text-center space-y-2"><h3 className="text-3xl font-black">System Login</h3><p className="opacity-60 font-medium text-sm">Access your AlagaLink account</p></div><form onSubmit={handleLogin} className="space-y-6"><div><label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Email</label><input type="email" value={loginForm.data.email} onChange={(e) => { loginForm.setData('email', e.target.value); setLoginError(''); }} placeholder="Enter your email" className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium" /></div><div><label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Password</label><input type="password" value={loginForm.data.password} onChange={(e) => { loginForm.setData('password', e.target.value); setLoginError(''); }} placeholder="Enter your password" className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium" /></div>{loginError && <div className="p-4 rounded-[16px] bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-sm font-black"><i className="fa-solid fa-exclamation-circle mr-2"></i> {loginError}</div>}<button type="submit" disabled={loginForm.processing} className="w-full py-4 rounded-[20px] bg-alaga-blue text-white font-black uppercase tracking-widest text-sm hover:shadow-lg hover:shadow-alaga-blue/50 transition-all active:scale-95 disabled:opacity-60"><i className="fa-solid fa-arrow-right-to-bracket mr-2"></i> Log In Now</button></form><div className="text-center text-xs opacity-60 font-medium">Don&apos;t have an account? <button onClick={() => { setShowLoginPopover(false); setShowSignupPopover(false); setShowPWDIDPopover(true); setLoginError(''); loginForm.reset(); }} className="text-alaga-teal font-black ml-1 hover:underline">Sign up here</button></div></div></div></div>
       )}
 
       {showPWDIDPopover && (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300"><div className="bg-white dark:bg-alaga-charcoal rounded-[48px] w-full max-w-3xl shadow-[0_40px_100px_rgba(0,0,0,0.5)] overflow-hidden animate-in zoom-in-95 duration-300 relative border border-white/10"><button onClick={() => setShowPWDIDPopover(false)} className="absolute top-8 right-8 w-12 h-12 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all z-20"><i className="fa-solid fa-xmark"></i></button><div className="p-12 md:p-20 space-y-12"><div className="text-center space-y-4"><h3 className="text-4xl font-black">Register for PWD ID</h3><p className="opacity-60 font-medium">Select your registration type below.</p></div><div className="grid grid-cols-1 md:grid-cols-2 gap-8"><div onClick={goToRegister} className="p-10 rounded-[32px] bg-alaga-teal/5 border-4 border-transparent hover:border-alaga-teal cursor-pointer transition-all group relative overflow-hidden"><i className="fa-solid fa-id-card text-5xl text-alaga-teal mb-6 group-hover:scale-110 transition-transform"></i><h4 className="text-2xl font-black mb-2">PWD Applicant</h4><p className="text-sm opacity-50 font-medium leading-relaxed">Register as a Person with Disabilities to access benefits and services.</p><i className="fa-solid fa-id-card absolute -right-6 -bottom-6 text-[120px] opacity-5 -rotate-12"></i></div><div onClick={goToRegister} className="p-10 rounded-[32px] bg-alaga-blue/5 border-4 border-transparent hover:border-alaga-blue cursor-pointer transition-all group relative overflow-hidden"><i className="fa-solid fa-shield-halved text-5xl text-alaga-blue mb-6 group-hover:scale-110 transition-transform"></i><h4 className="text-2xl font-black mb-2">Staff/Admin</h4><p className="text-sm opacity-50 font-medium leading-relaxed">Register as administrative staff to manage PDAO and MSWDO operations.</p><i className="fa-solid fa-shield-halved absolute -right-6 -bottom-6 text-[120px] opacity-5 -rotate-12"></i></div></div></div></div></div>
+        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-alaga-charcoal rounded-[48px] w-full max-w-3xl shadow-[0_40px_100px_rgba(0,0,0,0.5)] overflow-hidden animate-in zoom-in-95 duration-300 relative border border-white/10">
+            <button onClick={() => { setShowPWDIDPopover(false); setRegistrationType(null); setSignupError(''); signupForm.reset(); }} className="absolute top-8 right-8 w-12 h-12 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all z-20">
+              <i className="fa-solid fa-xmark"></i>
+            </button>
+            <div className="p-12 md:p-20 space-y-12">
+              <div className="text-center space-y-4">
+                <h3 className="text-4xl font-black">Select Registration Type</h3>
+                <p className="opacity-60 font-medium">Choose the form that matches your account.</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div onClick={() => beginRegistration('pwd')} className="p-10 rounded-[32px] bg-alaga-teal/5 border-4 border-transparent hover:border-alaga-teal cursor-pointer transition-all group relative overflow-hidden">
+                  <i className="fa-solid fa-id-card text-5xl text-alaga-teal mb-6 group-hover:scale-110 transition-transform"></i>
+                  <h4 className="text-2xl font-black mb-2">PWD Applicant</h4>
+                  <p className="text-sm opacity-50 font-medium leading-relaxed">Register as a Person with Disabilities to access benefits and services.</p>
+                  <i className="fa-solid fa-id-card absolute -right-6 -bottom-6 text-[120px] opacity-5 -rotate-12"></i>
+                </div>
+                <div onClick={() => beginRegistration('staff')} className="p-10 rounded-[32px] bg-alaga-blue/5 border-4 border-transparent hover:border-alaga-blue cursor-pointer transition-all group relative overflow-hidden">
+                  <i className="fa-solid fa-shield-halved text-5xl text-alaga-blue mb-6 group-hover:scale-110 transition-transform"></i>
+                  <h4 className="text-2xl font-black mb-2">Staff/Admin</h4>
+                  <p className="text-sm opacity-50 font-medium leading-relaxed">Register as administrative staff to manage PDAO and MSWDO operations.</p>
+                  <i className="fa-solid fa-shield-halved absolute -right-6 -bottom-6 text-[120px] opacity-5 -rotate-12"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {showSignupPopover && (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300"><div className="bg-white dark:bg-alaga-charcoal rounded-[48px] w-full max-w-3xl shadow-[0_40px_100px_rgba(0,0,0,0.5)] overflow-hidden animate-in zoom-in-95 duration-300 relative border border-white/10"><button onClick={() => setShowSignupPopover(false)} className="absolute top-8 right-8 w-12 h-12 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all z-20"><i className="fa-solid fa-xmark"></i></button><div className="p-12 md:p-20 space-y-12"><div className="text-center space-y-4"><h3 className="text-4xl font-black">Registration Path</h3><p className="opacity-60 font-medium">Select the form most appropriate for your status.</p></div><div className="grid grid-cols-1 md:grid-cols-2 gap-8"><div onClick={goToRegister} className="p-10 rounded-[32px] bg-alaga-teal/5 border-4 border-transparent hover:border-alaga-teal cursor-pointer transition-all group relative overflow-hidden"><i className="fa-solid fa-person-rays text-5xl text-alaga-teal mb-6 group-hover:scale-110 transition-transform"></i><h4 className="text-2xl font-black mb-2">Member Registry</h4><p className="text-sm opacity-50 font-medium leading-relaxed">For Persons with Disabilities and Children with Special Needs residing in La Trinidad.</p><i className="fa-solid fa-person-rays absolute -right-6 -bottom-6 text-[120px] opacity-5 -rotate-12"></i></div><div onClick={goToRegister} className="p-10 rounded-[32px] bg-alaga-blue/5 border-4 border-transparent hover:border-alaga-blue cursor-pointer transition-all group relative overflow-hidden"><i className="fa-solid fa-shield-halved text-5xl text-alaga-blue mb-6 group-hover:scale-110 transition-transform"></i><h4 className="text-2xl font-black mb-2">Staff Access</h4><p className="text-sm opacity-50 font-medium leading-relaxed">For administrative officers and municipal staff of PDAO or MSWDO.</p><i className="fa-solid fa-shield-halved absolute -right-6 -bottom-6 text-[120px] opacity-5 -rotate-12"></i></div></div></div></div></div>
+        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-alaga-charcoal rounded-[48px] w-full max-w-md shadow-[0_40px_100px_rgba(0,0,0,0.5)] overflow-hidden animate-in zoom-in-95 duration-300 relative border border-white/10">
+            <button onClick={() => { setShowSignupPopover(false); setSignupError(''); setRegistrationType(null); signupForm.reset(); }} className="absolute top-8 right-8 w-12 h-12 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all z-20">
+              <i className="fa-solid fa-xmark"></i>
+            </button>
+            <div className="p-12 md:p-16 space-y-8">
+              <div className="text-center space-y-2">
+                <h3 className="text-3xl font-black">{registrationType === 'staff' ? 'Staff Registration' : 'PWD Registration'}</h3>
+                <p className="opacity-60 font-medium text-sm">Complete your credentials to pre-fill your profile</p>
+              </div>
+              <div className="flex items-center justify-between">
+                <button type="button" onClick={() => { setShowSignupPopover(false); setRegistrationType(null); setShowPWDIDPopover(true); }} className="text-xs font-black uppercase tracking-widest opacity-60 hover:opacity-100 transition-opacity">
+                  <i className="fa-solid fa-arrow-left mr-2"></i> Back
+                </button>
+                <span className="text-[10px] font-black uppercase tracking-widest opacity-40">{registrationType === 'staff' ? 'Staff/Admin' : 'PWD Applicant'}</span>
+              </div>
+              <form onSubmit={handleSignup} className="space-y-6">
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">First Name</label>
+                  <input
+                    type="text"
+                    value={signupForm.data.first_name}
+                    onChange={(e) => { signupForm.setData('first_name', e.target.value); setSignupError(''); }}
+                    placeholder="Enter your first name"
+                    className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Middle Name (Optional)</label>
+                  <input
+                    type="text"
+                    value={signupForm.data.middle_name}
+                    onChange={(e) => { signupForm.setData('middle_name', e.target.value); setSignupError(''); }}
+                    placeholder="Enter your middle name"
+                    className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Last Name</label>
+                  <input
+                    type="text"
+                    value={signupForm.data.last_name}
+                    onChange={(e) => { signupForm.setData('last_name', e.target.value); setSignupError(''); }}
+                    placeholder="Enter your last name"
+                    className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Email</label>
+                  <input
+                    type="email"
+                    value={signupForm.data.email}
+                    onChange={(e) => { signupForm.setData('email', e.target.value); setSignupError(''); }}
+                    placeholder="Enter your email"
+                    className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Contact Number</label>
+                  <input
+                    type="tel"
+                    value={signupForm.data.contact_number}
+                    onChange={(e) => { signupForm.setData('contact_number', e.target.value); setSignupError(''); }}
+                    placeholder="Enter your contact number"
+                    className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium"
+                    required
+                  />
+                </div>
+
+                {registrationType === 'pwd' && (
+                  <>
+                    <div>
+                      <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Address</label>
+                      <input
+                        type="text"
+                        value={signupForm.data.address}
+                        onChange={(e) => { signupForm.setData('address', e.target.value); setSignupError(''); }}
+                        placeholder="Enter your address"
+                        className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Disability Category</label>
+                      <select
+                        value={signupForm.data.disability_category}
+                        onChange={(e) => { signupForm.setData('disability_category', e.target.value); setSignupError(''); }}
+                        className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue font-medium"
+                        required
+                      >
+                        {Object.values(DisabilityCategory)
+                          .filter(v => v !== DisabilityCategory.None)
+                          .map(v => (
+                            <option key={v} value={v}>{v}</option>
+                          ))}
+                      </select>
+                    </div>
+                  </>
+                )}
+
+                {registrationType === 'staff' && (
+                  <div>
+                    <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Position</label>
+                    <input
+                      type="text"
+                      value={signupForm.data.staff_position}
+                      onChange={(e) => { signupForm.setData('staff_position', e.target.value); setSignupError(''); }}
+                      placeholder="Enter your position"
+                      className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium"
+                      required
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Password</label>
+                  <input
+                    type="password"
+                    value={signupForm.data.password}
+                    onChange={(e) => { signupForm.setData('password', e.target.value); setSignupError(''); }}
+                    placeholder="Create a password"
+                    className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Confirm Password</label>
+                  <input
+                    type="password"
+                    value={signupForm.data.password_confirmation}
+                    onChange={(e) => { signupForm.setData('password_confirmation', e.target.value); setSignupError(''); }}
+                    placeholder="Confirm your password"
+                    className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium"
+                    required
+                  />
+                </div>
+                {signupError && (
+                  <div className="p-4 rounded-[16px] bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-sm font-black">
+                    <i className="fa-solid fa-exclamation-circle mr-2"></i> {signupError}
+                  </div>
+                )}
+                <button
+                  type="submit"
+                  disabled={signupForm.processing}
+                  className="w-full py-4 rounded-[20px] bg-alaga-gold text-alaga-navy font-black uppercase tracking-widest text-sm hover:shadow-lg hover:shadow-alaga-gold/50 transition-all active:scale-95 disabled:opacity-60"
+                >
+                  <i className="fa-solid fa-user-plus mr-2"></i> Register
+                </button>
+              </form>
+              <div className="text-center text-xs opacity-60 font-medium">
+                Already have an account?
+                <button onClick={() => { setShowSignupPopover(false); setShowLoginPopover(true); setSignupError(''); signupForm.reset(); }} className="text-alaga-blue font-black ml-1 hover:underline">Log in here</button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
