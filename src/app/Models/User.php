@@ -21,6 +21,10 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'alagalink_id',
+        'alagalink_role',
+        'alagalink_status',
+        'alagalink_data',
     ];
 
     /**
@@ -43,6 +47,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'alagalink_data' => 'array',
         ];
     }
 }

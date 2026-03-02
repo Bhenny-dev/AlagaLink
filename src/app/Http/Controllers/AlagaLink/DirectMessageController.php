@@ -4,7 +4,7 @@ namespace App\Http\Controllers\AlagaLink;
 
 use App\Http\Controllers\Controller;
 use App\Models\AlagaLinkDirectMessage;
-use App\Models\AlagaLinkProfile;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -118,12 +118,16 @@ class DirectMessageController extends Controller
 
     private function profileRole(string $profileId): string
     {
-        $profile = AlagaLinkProfile::query()->where('id', $profileId)->first();
-        if ($profile?->role) {
-            return (string) $profile->role;
+        if ($profileId === self::OFFICE_ID) {
+            return 'Admin';
         }
 
-        $role = data_get($profile?->data, 'role');
+        $user = User::query()->where('alagalink_id', $profileId)->first();
+        if ($user?->alagalink_role) {
+            return (string) $user->alagalink_role;
+        }
+
+        $role = data_get($user?->alagalink_data, 'role');
         if (is_string($role) && $role !== '') {
             return $role;
         }
@@ -143,32 +147,13 @@ class DirectMessageController extends Controller
             ]);
         }
 
-        $existing = AlagaLinkProfile::query()->where('email', $user->email)->first();
-        if ($existing) {
-            return [
-                'id' => (string) $existing->id,
-                'role' => (string) ($existing->role ?: data_get($existing->data, 'role', 'User')),
-            ];
-        }
-
-        $profileId = 'laravel-'.$user->id;
-
-        // Create a minimal profile so messaging persists consistently.
-        AlagaLinkProfile::query()->create([
-            'id' => $profileId,
-            'email' => $user->email,
-            'role' => 'User',
-            'status' => 'Active',
-            'data' => [
-                'id' => $profileId,
-                'email' => $user->email,
-                'role' => 'User',
-            ],
-        ]);
+        /** @var \App\Models\User $user */
+        $profileId = (string) ($user->alagalink_id ?: ('laravel-'.$user->id));
+        $role = (string) ($user->alagalink_role ?: data_get($user->alagalink_data, 'role', 'User'));
 
         return [
             'id' => $profileId,
-            'role' => 'User',
+            'role' => $role,
         ];
     }
 }

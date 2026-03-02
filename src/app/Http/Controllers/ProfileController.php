@@ -13,11 +13,21 @@ use Inertia\Response;
 
 class ProfileController extends Controller
 {
+    private function ensureStaffOrAdmin(Request $request): void
+    {
+        $user = $request->user();
+        $role = (string) ($user?->alagalink_role ?? 'User');
+
+        abort_unless(in_array($role, ['Admin', 'SuperAdmin'], true), 403);
+    }
+
     /**
      * Display the user's profile form.
      */
     public function edit(Request $request): Response
     {
+        $this->ensureStaffOrAdmin($request);
+
         $user = $request->user();
         $createdAt = $user->created_at;
         $accountAgeDays = $createdAt ? $createdAt->diffInDays(now()) : 0;
@@ -37,6 +47,8 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
+        $this->ensureStaffOrAdmin($request);
+
         $request->user()->fill($request->validated());
 
         if ($request->user()->isDirty('email')) {
@@ -53,6 +65,8 @@ class ProfileController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        $this->ensureStaffOrAdmin($request);
+
         $request->validate([
             'password' => ['required', 'current_password'],
         ]);

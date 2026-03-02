@@ -9,6 +9,8 @@ interface ProfileHeaderProps {
 }
 
 const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user }) => {
+  const canEditProfile = user.role === 'Admin' || user.role === 'SuperAdmin';
+
   return (
     <div className="bg-white dark:bg-alaga-charcoal rounded-[48px] overflow-hidden shadow-2xl border border-gray-100 dark:border-white/5 animate-in fade-in slide-in-from-top-10 duration-1000 inflated-card">
       {/* Minimalist "Blank" Background Section */}
@@ -73,10 +75,12 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user }) => {
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-4">
-            <button className="px-10 py-5 bg-white dark:bg-alaga-navy/40 border-2 border-gray-100 dark:border-white/10 hover:border-alaga-blue rounded-[28px] font-black text-sm transition-all flex items-center gap-3 shadow-xl group hover:scale-105 active:scale-95">
-              <i className="fa-solid fa-user-pen text-lg group-hover:text-alaga-blue"></i>
-              Edit Profile
-            </button>
+            {canEditProfile && (
+              <button className="px-10 py-5 bg-white dark:bg-alaga-navy/40 border-2 border-gray-100 dark:border-white/10 hover:border-alaga-blue rounded-[28px] font-black text-sm transition-all flex items-center gap-3 shadow-xl group hover:scale-105 active:scale-95">
+                <i className="fa-solid fa-user-pen text-lg group-hover:text-alaga-blue"></i>
+                Edit Profile
+              </button>
+            )}
           </div>
         </div>
       </div>

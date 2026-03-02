@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AlagaLink\DirectMessageController;
+use App\Http\Controllers\AlagaLink\UserProfileController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -30,6 +31,9 @@ Route::middleware('auth')->group(function () {
 Route::middleware('auth')->prefix('api')->group(function () {
     Route::get('/direct-messages/thread/{peerId}', [DirectMessageController::class, 'thread']);
     Route::post('/direct-messages', [DirectMessageController::class, 'store']);
+
+    Route::post('/alagalink/users', [UserProfileController::class, 'store']);
+    Route::patch('/alagalink/users/{alagalinkId}', [UserProfileController::class, 'update']);
 });
 
 require __DIR__.'/auth.php';

@@ -9,6 +9,8 @@ export default function AuthenticatedLayout({ header, children }) {
 
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
+        const actorRole = user?.alagalink_role ?? 'User';
+        const canEditAccountProfile = actorRole === 'Admin' || actorRole === 'SuperAdmin';
 
     return (
         <div className="min-h-screen bg-gray-100">
@@ -78,11 +80,13 @@ export default function AuthenticatedLayout({ header, children }) {
                                     </Dropdown.Trigger>
 
                                     <Dropdown.Content>
-                                        <Dropdown.Link
-                                            href={route('profile.edit')}
-                                        >
-                                            Profile
-                                        </Dropdown.Link>
+                                            {canEditAccountProfile && (
+                                                <Dropdown.Link
+                                                    href={route('profile.edit')}
+                                                >
+                                                    Profile
+                                                </Dropdown.Link>
+                                            )}
                                         <Dropdown.Link
                                             href={route('logout', {}, false)}
                                             method="post"
@@ -182,9 +186,11 @@ export default function AuthenticatedLayout({ header, children }) {
                         </div>
 
                         <div className="mt-3 space-y-1">
-                            <ResponsiveNavLink href={route('profile.edit')}>
-                                Profile
-                            </ResponsiveNavLink>
+                                {canEditAccountProfile && (
+                                    <ResponsiveNavLink href={route('profile.edit')}>
+                                        Profile
+                                    </ResponsiveNavLink>
+                                )}
                             <ResponsiveNavLink
                                 method="post"
                                 href={route('logout', {}, false)}

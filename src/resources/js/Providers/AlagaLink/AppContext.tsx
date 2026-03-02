@@ -17,17 +17,6 @@ import {
   SystemUpdate,
   AboutInfo,
 } from './types';
-import {
-  ABOUT_INFO,
-  MOCK_DEVICES,
-  MOCK_LIVELIHOODS,
-  MOCK_MEDICAL,
-  MOCK_NOTIFICATION_HISTORY,
-  MOCK_PROGRAM_RECORDS,
-  MOCK_REPORTS,
-  MOCK_UPDATES,
-  MOCK_USERS,
-} from './mockData/index';
 import { OFFICE_ID } from './constants';
 
 type LaravelUser = {
@@ -99,15 +88,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialLaravelUs
   initialLaravelUser = null,
   initialSeed = null,
 }) => {
-  const seededUsers = (initialSeed?.users?.length ? initialSeed.users : MOCK_USERS) as UserProfile[];
-  const seededReports = (initialSeed?.reports?.length ? initialSeed.reports : MOCK_REPORTS) as LostReport[];
-  const seededProgramRequests = (initialSeed?.programRequests?.length ? initialSeed.programRequests : MOCK_PROGRAM_RECORDS) as ProgramAvailment[];
-  const seededNotifications = (initialSeed?.notifications?.length ? initialSeed.notifications : MOCK_NOTIFICATION_HISTORY) as Notification[];
-  const seededDevices = (initialSeed?.devices?.length ? initialSeed.devices : MOCK_DEVICES) as AssistiveDevice[];
-  const seededMedical = (initialSeed?.medical?.length ? initialSeed.medical : MOCK_MEDICAL) as MedicalService[];
-  const seededLivelihoods = (initialSeed?.livelihoods?.length ? initialSeed.livelihoods : MOCK_LIVELIHOODS) as LivelihoodProgram[];
-  const seededUpdates = (initialSeed?.updates?.length ? initialSeed.updates : MOCK_UPDATES) as SystemUpdate[];
-  const seededAbout = (initialSeed?.about ? initialSeed.about : ABOUT_INFO) as AboutInfo;
+  const seededUsers = ((initialSeed?.users ?? []) as UserProfile[]);
+  const seededReports = ((initialSeed?.reports ?? []) as LostReport[]);
+  const seededProgramRequests = ((initialSeed?.programRequests ?? []) as ProgramAvailment[]);
+  const seededNotifications = ((initialSeed?.notifications ?? []) as Notification[]);
+  const seededDevices = ((initialSeed?.devices ?? []) as AssistiveDevice[]);
+  const seededMedical = ((initialSeed?.medical ?? []) as MedicalService[]);
+  const seededLivelihoods = ((initialSeed?.livelihoods ?? []) as LivelihoodProgram[]);
+  const seededUpdates = ((initialSeed?.updates ?? []) as SystemUpdate[]);
+  const seededAbout = (initialSeed?.about ?? null) as AboutInfo | null;
 
   const seededUser = useMemo(() => {
     if (!initialLaravelUser?.email) return null;
@@ -248,6 +237,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialLaravelUs
       };
       setNotifications([saNotif, ...notifications]);
     }
+
+    // Persist to server (DB-backed) when available.
+    axios.post('/api/alagalink/users', user)
+      .then((response) => {
+        const saved = response?.data?.user as UserProfile | undefined;
+        if (!saved?.id) return;
+        setUsers(prev => {
+          const replaced = prev.map(u => (u.id === user.id ? saved : u));
+          const alreadyThere = replaced.some(u => u.id === saved.id);
+          return alreadyThere ? replaced : [saved, ...replaced];
+        });
+      })
+      .catch((e) => {
+        console.error('Failed to persist created user:', e);
+      });
   };
 
   const updateUser = (updatedUser: UserProfile) => {
@@ -256,6 +260,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialLaravelUs
     if (currentUser?.id === updatedUser.id) {
       setCurrentUser(updatedUser);
     }
+
+    axios.patch('/api/alagalink/users/' + encodeURIComponent(updatedUser.id), updatedUser)
+      .then((response) => {
+        const saved = response?.data?.user as UserProfile | undefined;
+        if (!saved?.id) return;
+
+        setUsers(prev => prev.map(u => u.id === saved.id ? saved : u));
+        if (currentUser?.id === saved.id) {
+          setCurrentUser(saved);
+        }
+      })
+      .catch((e) => {
+        console.error('Failed to persist updated user:', e);
+      });
   };
 
   const updateProgramRequest = (updatedReq: ProgramAvailment) => {

@@ -15,8 +15,6 @@ const FloatingAssistiveButton: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [showAdminHub, setShowAdminHub] = useState(false);
   const [activeChatUser, setActiveChatUser] = useState<UserProfile | null>(null);
-  // For non-admin users, track which thread they selected in their compact popover
-  const [selectedThread, setSelectedThread] = useState<'AI' | 'Office' | null>(null);
 
   // Initialize position on mount (defer setState to avoid calling setState synchronously within effect)
   useEffect(() => {
@@ -26,9 +24,6 @@ const FloatingAssistiveButton: React.FC = () => {
   // Track if a drag actually happened to prevent accidental clicks
   const dragOccurred = useRef(false);
   const startPos = useRef({ x: 0, y: 0 });
-
-  // Set AI (AlagaLink Bot) as selected by default for Admin Hub
-  const [isAiSelected, setIsAiSelected] = useState(true);
 
   const [hubSearch, setHubSearch] = useState('');
   const [hubTab, setHubTab] = useState<'PWD' | 'Staff'>('PWD');
@@ -52,6 +47,21 @@ const FloatingAssistiveButton: React.FC = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // ESC to close any open chat modal.
+  useEffect(() => {
+    if (!isOpen && !showAdminHub) return;
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      setIsOpen(false);
+      setShowAdminHub(false);
+      setActiveChatUser(null);
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, showAdminHub]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
@@ -106,7 +116,6 @@ const FloatingAssistiveButton: React.FC = () => {
     if (isAdmin) {
       // Toggle admin hub: open (and reset selection) or close if already open
       if (!showAdminHub) {
-        setIsAiSelected(true);
         setActiveChatUser(null);
         setShowAdminHub(true);
       } else {
@@ -115,12 +124,6 @@ const FloatingAssistiveButton: React.FC = () => {
     } else {
       setIsOpen(prev => {
         const next = !prev;
-        if (!next) {
-          setSelectedThread(null);
-        } else {
-          // default to AI thread when opening the popover
-          setSelectedThread('AI');
-        }
         return next;
       });
     }
@@ -128,12 +131,6 @@ const FloatingAssistiveButton: React.FC = () => {
 
   const selectUser = (user: UserProfile) => {
     setActiveChatUser(user);
-    setIsAiSelected(false);
-  };
-
-  const selectAi = () => {
-    setIsAiSelected(true);
-    setActiveChatUser(null);
   };
 
   const filteredUsers = users.filter(u => {
@@ -184,10 +181,16 @@ const FloatingAssistiveButton: React.FC = () => {
 
       {/* BIG CENTERED ADMIN HUB */}
       {showAdminHub && isAdmin && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-8 bg-alaga-navy/60 backdrop-blur-md animate-in fade-in duration-300">
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-8 bg-alaga-navy/60 backdrop-blur-md animate-in fade-in duration-300"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => { setShowAdminHub(false); setActiveChatUser(null); }}
+        >
 
           <div
             className="w-full max-w-6xl h-[85vh] bg-white dark:bg-alaga-charcoal shadow-[0_40px_100px_rgba(0,0,0,0.5)] rounded-[40px] flex flex-row border border-white/10 overflow-hidden animate-in zoom-in-95 duration-500 relative"
+            onClick={(e) => e.stopPropagation()}
           >
             <aside className="w-80 md:w-96 border-r border-gray-100 dark:border-white/5 flex flex-col bg-gray-50/30 dark:bg-black/10">
               <header className="p-6 bg-alaga-blue text-white shrink-0">
@@ -231,21 +234,15 @@ const FloatingAssistiveButton: React.FC = () => {
               </header>
 
               <div className="p-4 shrink-0">
-                <button
-                  onClick={selectAi}
-                  className={`w-full p-5 rounded-[24px] flex items-center gap-4 transition-all relative overflow-hidden group shadow-sm
-                    ${isAiSelected ? 'bg-alaga-blue text-white shadow-xl scale-[1.02]' : 'bg-white dark:bg-alaga-charcoal hover:bg-alaga-blue/5 border border-gray-100 dark:border-white/5'}
-                  `}
-                >
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-inner ${isAiSelected ? 'bg-white/20' : 'bg-alaga-blue text-white'}`}>
-                    <i className="fa-solid fa-robot text-xl"></i>
+                <div className="w-full p-5 rounded-[24px] flex items-center gap-4 bg-white dark:bg-alaga-charcoal border border-gray-100 dark:border-white/5">
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-inner bg-alaga-blue text-white">
+                    <i className="fa-solid fa-message text-xl"></i>
                   </div>
                   <div className="text-left flex-1">
-                    <p className={`font-black text-sm ${isAiSelected ? 'text-white' : 'text-alaga-blue'}`}>AlagaLink Bot</p>
-                    <p className={`text-[9px] uppercase font-bold tracking-widest ${isAiSelected ? 'text-white/60' : 'opacity-40'}`}>System Specialist</p>
+                    <p className="font-black text-sm text-alaga-blue dark:text-white">Messaging</p>
+                    <p className="text-[9px] uppercase font-bold tracking-widest opacity-40">Select a thread to reply</p>
                   </div>
-                  {isAiSelected && <div className="absolute right-4 w-2 h-2 bg-alaga-gold rounded-full animate-pulse"></div>}
-                </button>
+                </div>
               </div>
 
               <div className="px-4 pb-4 shrink-0">
@@ -305,10 +302,11 @@ const FloatingAssistiveButton: React.FC = () => {
             </aside>
 
             <main className="flex-1 flex flex-col bg-white dark:bg-alaga-charcoal relative">
-              {(activeChatUser || isAiSelected) ? (
+              {activeChatUser ? (
                 <div className="h-full flex flex-col animate-in fade-in duration-300">
                   <ChatWindow
-                    onClose={() => setShowAdminHub(false)}
+                    onClose={() => { setShowAdminHub(false); setActiveChatUser(null); }}
+                    onBackToList={() => setActiveChatUser(null)}
                     targetUser={activeChatUser || undefined}
                     isEmbedded={true}
                     anchorPosition={position}
@@ -320,7 +318,7 @@ const FloatingAssistiveButton: React.FC = () => {
                     <i className="fa-solid fa-comments-medical text-6xl"></i>
                   </div>
                   <h4 className="text-2xl font-black uppercase tracking-[0.2em]">Select a Thread</h4>
-                  <p className="max-w-xs mx-auto mt-4 font-bold">Pick a member or use the AlagaLink Bot to begin registry interactions.</p>
+                  <p className="max-w-xs mx-auto mt-4 font-bold">Pick a member or staff thread to begin messaging.</p>
                 </div>
               )}
             </main>
@@ -330,32 +328,26 @@ const FloatingAssistiveButton: React.FC = () => {
 
       {/* REGULAR USER CHAT POP-OVER */}
       {isOpen && !isAdmin && (
-        <div className="fixed inset-0 z-[220] flex items-center justify-center p-6">
-          <div role="dialog" aria-modal="true" className="w-full max-w-4xl h-[75vh] bg-white dark:bg-alaga-charcoal rounded-[24px] shadow-2xl overflow-hidden flex">
+        <div
+          className="fixed inset-0 z-[220] flex items-center justify-center p-6 bg-alaga-navy/40 backdrop-blur-sm animate-in fade-in duration-200"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setIsOpen(false)}
+        >
+          <div
+            className="w-full max-w-4xl h-[75vh] bg-white dark:bg-alaga-charcoal rounded-[24px] shadow-2xl overflow-hidden flex animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* LEFT: Contacts */}
             <aside className="w-72 border-r border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-black/10 p-4 flex flex-col">
               <div className="flex items-center justify-between mb-4">
                 <h4 className="font-black">Contacts</h4>
-                {/* Note: closing handled by floating button */}
-                <span className="text-xs opacity-50">Tap the floating button to close</span>
               </div>
 
               <div className="space-y-3">
                 <button
-                  onClick={() => setSelectedThread('AI')}
-                  className={`w-full text-left p-3 rounded-lg flex items-center gap-3 transition-all ${selectedThread === 'AI' ? 'bg-alaga-blue text-white' : 'hover:bg-white/50'}`}>
-                  <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-alaga-blue">
-                    <i className="fa-solid fa-robot"></i>
-                  </div>
-                  <div>
-                    <p className="font-black">AlagaLink Bot</p>
-                    <p className="text-xs opacity-60">Automated assistant</p>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => setSelectedThread('Office')}
-                  className={`w-full text-left p-3 rounded-lg flex items-center gap-3 transition-all ${selectedThread === 'Office' ? 'bg-alaga-teal text-white' : 'hover:bg-white/50'}`}>
+                  onClick={() => setActiveChatUser({ id: OFFICE_ID, firstName: 'PDAO Office', lastName: '', role: 'User' } as UserProfile)}
+                  className={`w-full text-left p-3 rounded-lg flex items-center gap-3 transition-all ${activeChatUser?.id === OFFICE_ID ? 'bg-alaga-teal text-white' : 'hover:bg-white/50'}`}>
                   <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-alaga-teal">
                     <i className="fa-solid fa-building"></i>
                   </div>
@@ -371,18 +363,25 @@ const FloatingAssistiveButton: React.FC = () => {
 
             {/* RIGHT: Messaging area */}
             <main className="flex-1 p-4">
-              {selectedThread === 'AI' && (
+              {activeChatUser ? (
                 <div className="h-full flex flex-col">
                   <div className="flex-1 overflow-hidden rounded-lg border border-gray-100 dark:border-white/5">
-                    <ChatWindow onClose={() => { setIsOpen(false); setSelectedThread(null); }} isEmbedded={true} anchorPosition={position} />
+                    <ChatWindow
+                      onClose={() => { setIsOpen(false); setActiveChatUser(null); }}
+                      onBackToList={() => setActiveChatUser(null)}
+                      targetUser={activeChatUser}
+                      isEmbedded={true}
+                      anchorPosition={position}
+                    />
                   </div>
                 </div>
-              )}
-
-              {selectedThread === 'Office' && (
-                <div className="h-full flex flex-col">
-                  <div className="flex-1 overflow-hidden rounded-lg border border-gray-100 dark:border-white/5">
-                    <ChatWindow onClose={() => { setIsOpen(false); setSelectedThread(null); }} targetUser={{ id: OFFICE_ID, firstName: 'PDAO Office', lastName: '', role: 'User' } as UserProfile} isEmbedded={true} anchorPosition={position} />
+              ) : (
+                <div className="h-full flex items-center justify-center opacity-30 text-center px-10">
+                  <div>
+                    <div className="w-20 h-20 mx-auto rounded-full bg-alaga-blue/10 flex items-center justify-center mb-4">
+                      <i className="fa-solid fa-message text-2xl text-alaga-blue"></i>
+                    </div>
+                    <p className="font-black uppercase tracking-widest text-xs">Select a contact to message</p>
                   </div>
                 </div>
               )}

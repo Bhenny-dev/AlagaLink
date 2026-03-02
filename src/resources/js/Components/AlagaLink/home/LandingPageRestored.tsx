@@ -23,9 +23,9 @@ const LandingPage: React.FC<{ initialSection?: string | null }> = ({ initialSect
     remember: false,
   });
 
-  const signupForm = useForm({
-    account_type: '' as '' | 'pwd' | 'staff',
-    alagalink_role: '' as '' | 'User' | 'Admin',
+  const pwdSignupForm = useForm({
+    account_type: 'pwd' as const,
+    alagalink_role: 'User' as const,
     first_name: '',
     middle_name: '',
     last_name: '',
@@ -33,18 +33,46 @@ const LandingPage: React.FC<{ initialSection?: string | null }> = ({ initialSect
     email: '',
     contact_number: '',
     address: '',
+    birth_date: '',
+    sex: 'Male' as 'Male' | 'Female' | 'Other',
+    blood_type: 'O+' as string,
     disability_category: DisabilityCategory.Autism as string,
-    staff_position: '',
+    emergency_contact_name: '',
+    emergency_contact_relation: '',
+    emergency_contact_number: '',
     password: '',
     password_confirmation: '',
   });
 
-  const [showSignupPopover, setShowSignupPopover] = useState(false);
+  const staffSignupForm = useForm({
+    account_type: 'staff' as const,
+    alagalink_role: 'Admin' as const,
+    first_name: '',
+    middle_name: '',
+    last_name: '',
+    name: '',
+    email: '',
+    contact_number: '',
+    address: '',
+    birth_date: '',
+    sex: 'Male' as 'Male' | 'Female' | 'Other',
+    blood_type: 'O+' as string,
+    staff_position: '',
+    staff_office: '',
+    emergency_contact_name: '',
+    emergency_contact_relation: '',
+    emergency_contact_number: '',
+    password: '',
+    password_confirmation: '',
+  });
+
+  const [showPWDSignupPopover, setShowPWDSignupPopover] = useState(false);
+  const [showStaffSignupPopover, setShowStaffSignupPopover] = useState(false);
   const [showLoginPopover, setShowLoginPopover] = useState(false);
   const [showPWDIDPopover, setShowPWDIDPopover] = useState(false);
   const [loginError, setLoginError] = useState('');
-  const [signupError, setSignupError] = useState('');
-  const [registrationType, setRegistrationType] = useState<null | 'pwd' | 'staff'>(null);
+  const [pwdSignupError, setPwdSignupError] = useState('');
+  const [staffSignupError, setStaffSignupError] = useState('');
 
   const programsRef = useRef<HTMLDivElement>(null);
   const missingRef = useRef<HTMLDivElement>(null);
@@ -82,7 +110,8 @@ const LandingPage: React.FC<{ initialSection?: string | null }> = ({ initialSect
     loginForm.post(route('login', {}, false), {
       onSuccess: () => {
         setShowLoginPopover(false);
-        setShowSignupPopover(false);
+        setShowPWDSignupPopover(false);
+        setShowStaffSignupPopover(false);
         window.location.href = route('dashboard', {}, false);
       },
       onError: (errors) => {
@@ -98,54 +127,113 @@ const LandingPage: React.FC<{ initialSection?: string | null }> = ({ initialSect
     });
   };
 
-  const handleSignup = (e: React.FormEvent) => {
+  const computeFullName = (first: string, middle: string, last: string) => {
+    const cleanedFirst = first.trim();
+    const cleanedMiddle = middle.trim();
+    const cleanedLast = last.trim();
+    return {
+      cleanedFirst,
+      cleanedMiddle,
+      cleanedLast,
+      computedName: [cleanedFirst, cleanedMiddle, cleanedLast].filter(Boolean).join(' '),
+    };
+  };
+
+  const handlePWDSignup = (e: React.FormEvent) => {
     e.preventDefault();
-    setSignupError('');
+    setPwdSignupError('');
 
-    const cleanedFirst = signupForm.data.first_name.trim();
-    const cleanedMiddle = signupForm.data.middle_name.trim();
-    const cleanedLast = signupForm.data.last_name.trim();
-    const computedName = [cleanedFirst, cleanedMiddle, cleanedLast].filter(Boolean).join(' ');
+    const { cleanedFirst, cleanedMiddle, cleanedLast, computedName } = computeFullName(
+      pwdSignupForm.data.first_name,
+      pwdSignupForm.data.middle_name,
+      pwdSignupForm.data.last_name,
+    );
 
-    const accountType = registrationType;
-    const alagaRole = accountType === 'staff' ? 'Admin' : 'User';
-
-    if (!accountType) {
-      setSignupError('Please select a registration type (PWD or Staff) first.');
-      return;
-    }
-
-    signupForm.transform((data) => ({
+    pwdSignupForm.transform((data) => ({
       ...data,
-      account_type: accountType,
-      alagalink_role: alagaRole,
+      account_type: 'pwd',
+      alagalink_role: 'User',
       name: computedName,
       first_name: cleanedFirst,
       middle_name: cleanedMiddle,
       last_name: cleanedLast,
     }));
 
-    signupForm.post('/register', {
+    pwdSignupForm.post('/register', {
       onSuccess: () => {
-        setShowSignupPopover(false);
-        setRegistrationType(null);
+        setShowPWDSignupPopover(false);
         setShowLoginPopover(true);
       },
       onError: (errors) => {
         const message =
           (typeof errors.first_name === 'string' && errors.first_name) ||
           (typeof errors.last_name === 'string' && errors.last_name) ||
-          (typeof errors.name === 'string' && errors.name) ||
           (typeof errors.email === 'string' && errors.email) ||
           (typeof errors.contact_number === 'string' && errors.contact_number) ||
           (typeof errors.address === 'string' && errors.address) ||
+          (typeof errors.birth_date === 'string' && errors.birth_date) ||
+          (typeof errors.sex === 'string' && errors.sex) ||
+          (typeof errors.blood_type === 'string' && errors.blood_type) ||
           (typeof errors.disability_category === 'string' && errors.disability_category) ||
+          (typeof errors.emergency_contact_name === 'string' && errors.emergency_contact_name) ||
+          (typeof errors.emergency_contact_relation === 'string' && errors.emergency_contact_relation) ||
+          (typeof errors.emergency_contact_number === 'string' && errors.emergency_contact_number) ||
           (typeof errors.password === 'string' && errors.password) ||
           'Registration failed. Please review your details and try again.';
-        setSignupError(message);
+        setPwdSignupError(message);
       },
       onFinish: () => {
-        signupForm.reset('password', 'password_confirmation');
+        pwdSignupForm.reset('password', 'password_confirmation');
+      },
+    });
+  };
+
+  const handleStaffSignup = (e: React.FormEvent) => {
+    e.preventDefault();
+    setStaffSignupError('');
+
+    const { cleanedFirst, cleanedMiddle, cleanedLast, computedName } = computeFullName(
+      staffSignupForm.data.first_name,
+      staffSignupForm.data.middle_name,
+      staffSignupForm.data.last_name,
+    );
+
+    staffSignupForm.transform((data) => ({
+      ...data,
+      account_type: 'staff',
+      alagalink_role: 'Admin',
+      name: computedName,
+      first_name: cleanedFirst,
+      middle_name: cleanedMiddle,
+      last_name: cleanedLast,
+    }));
+
+    staffSignupForm.post('/register', {
+      onSuccess: () => {
+        setShowStaffSignupPopover(false);
+        setShowLoginPopover(true);
+      },
+      onError: (errors) => {
+        const message =
+          (typeof errors.first_name === 'string' && errors.first_name) ||
+          (typeof errors.last_name === 'string' && errors.last_name) ||
+          (typeof errors.email === 'string' && errors.email) ||
+          (typeof errors.contact_number === 'string' && errors.contact_number) ||
+          (typeof errors.address === 'string' && errors.address) ||
+          (typeof errors.birth_date === 'string' && errors.birth_date) ||
+          (typeof errors.sex === 'string' && errors.sex) ||
+          (typeof errors.blood_type === 'string' && errors.blood_type) ||
+          (typeof errors.staff_office === 'string' && errors.staff_office) ||
+          (typeof errors.staff_position === 'string' && errors.staff_position) ||
+          (typeof errors.emergency_contact_name === 'string' && errors.emergency_contact_name) ||
+          (typeof errors.emergency_contact_relation === 'string' && errors.emergency_contact_relation) ||
+          (typeof errors.emergency_contact_number === 'string' && errors.emergency_contact_number) ||
+          (typeof errors.password === 'string' && errors.password) ||
+          'Registration failed. Please review your details and try again.';
+        setStaffSignupError(message);
+      },
+      onFinish: () => {
+        staffSignupForm.reset('password', 'password_confirmation');
       },
     });
   };
@@ -155,33 +243,46 @@ const LandingPage: React.FC<{ initialSection?: string | null }> = ({ initialSect
     setShowLoginPopover(false);
     setLoginError('');
     loginForm.reset();
-    setRegistrationType(null);
+    setPwdSignupError('');
+    setStaffSignupError('');
+    pwdSignupForm.reset();
+    staffSignupForm.reset();
     setShowPWDIDPopover(true);
   };
 
   const beginRegistration = (type: 'pwd' | 'staff') => {
-    setRegistrationType(type);
     setShowPWDIDPopover(false);
     setShowLoginPopover(false);
-    setShowSignupPopover(true);
-    setSignupError('');
+    setPwdSignupError('');
+    setStaffSignupError('');
 
-    signupForm.setData('account_type', type);
-    signupForm.setData('alagalink_role', type === 'staff' ? 'Admin' : 'User');
-    signupForm.setData('disability_category', type === 'staff' ? DisabilityCategory.None : DisabilityCategory.Autism);
+    if (type === 'pwd') {
+      setShowStaffSignupPopover(false);
+      setShowPWDSignupPopover(true);
+      pwdSignupForm.setData('account_type', 'pwd');
+      pwdSignupForm.setData('alagalink_role', 'User');
+      pwdSignupForm.setData('disability_category', DisabilityCategory.Autism);
+    } else {
+      setShowPWDSignupPopover(false);
+      setShowStaffSignupPopover(true);
+      staffSignupForm.setData('account_type', 'staff');
+      staffSignupForm.setData('alagalink_role', 'Admin');
+    }
   };
 
   React.useEffect(() => {
     if (initialSection === 'login') {
       setShowLoginPopover(true);
-      setShowSignupPopover(false);
+      setShowPWDSignupPopover(false);
+      setShowStaffSignupPopover(false);
       setShowPWDIDPopover(false);
     }
 
     if (initialSection === 'signup') {
       setShowPWDIDPopover(true);
       setShowLoginPopover(false);
-      setShowSignupPopover(false);
+      setShowPWDSignupPopover(false);
+      setShowStaffSignupPopover(false);
     }
   }, [initialSection]);
 
@@ -521,13 +622,13 @@ const LandingPage: React.FC<{ initialSection?: string | null }> = ({ initialSect
       <footer className="py-20 px-6 text-center opacity-30"><p className="text-[10px] font-black uppercase tracking-[0.5em]">La Trinidad Municipal Government • Benguet Province</p></footer>
 
       {showLoginPopover && (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300"><div className="bg-white dark:bg-alaga-charcoal rounded-[48px] w-full max-w-md shadow-[0_40px_100px_rgba(0,0,0,0.5)] overflow-hidden animate-in zoom-in-95 duration-300 relative border border-white/10"><button onClick={() => { setShowLoginPopover(false); setLoginError(''); loginForm.reset(); }} className="absolute top-8 right-8 w-12 h-12 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all z-20"><i className="fa-solid fa-xmark"></i></button><div className="p-12 md:p-16 space-y-8"><div className="text-center space-y-2"><h3 className="text-3xl font-black">System Login</h3><p className="opacity-60 font-medium text-sm">Access your AlagaLink account</p></div><form onSubmit={handleLogin} className="space-y-6"><div><label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Email</label><input type="email" value={loginForm.data.email} onChange={(e) => { loginForm.setData('email', e.target.value); setLoginError(''); }} placeholder="Enter your email" className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium" /></div><div><label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Password</label><input type="password" value={loginForm.data.password} onChange={(e) => { loginForm.setData('password', e.target.value); setLoginError(''); }} placeholder="Enter your password" className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium" /></div>{loginError && <div className="p-4 rounded-[16px] bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-sm font-black"><i className="fa-solid fa-exclamation-circle mr-2"></i> {loginError}</div>}<button type="submit" disabled={loginForm.processing} className="w-full py-4 rounded-[20px] bg-alaga-blue text-white font-black uppercase tracking-widest text-sm hover:shadow-lg hover:shadow-alaga-blue/50 transition-all active:scale-95 disabled:opacity-60"><i className="fa-solid fa-arrow-right-to-bracket mr-2"></i> Log In Now</button></form><div className="text-center text-xs opacity-60 font-medium">Don&apos;t have an account? <button onClick={() => { setShowLoginPopover(false); setShowSignupPopover(false); setShowPWDIDPopover(true); setLoginError(''); loginForm.reset(); }} className="text-alaga-teal font-black ml-1 hover:underline">Sign up here</button></div></div></div></div>
+        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300"><div className="bg-white dark:bg-alaga-charcoal rounded-[48px] w-full max-w-md shadow-[0_40px_100px_rgba(0,0,0,0.5)] overflow-hidden animate-in zoom-in-95 duration-300 relative border border-white/10"><button onClick={() => { setShowLoginPopover(false); setLoginError(''); loginForm.reset(); }} className="absolute top-8 right-8 w-12 h-12 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all z-20"><i className="fa-solid fa-xmark"></i></button><div className="p-12 md:p-16 space-y-8"><div className="text-center space-y-2"><h3 className="text-3xl font-black">System Login</h3><p className="opacity-60 font-medium text-sm">Access your AlagaLink account</p></div><form onSubmit={handleLogin} className="space-y-6"><div><label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Email</label><input type="email" value={loginForm.data.email} onChange={(e) => { loginForm.setData('email', e.target.value); setLoginError(''); }} placeholder="Enter your email" className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium" /></div><div><label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Password</label><input type="password" value={loginForm.data.password} onChange={(e) => { loginForm.setData('password', e.target.value); setLoginError(''); }} placeholder="Enter your password" className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium" /></div>{loginError && <div className="p-4 rounded-[16px] bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-sm font-black"><i className="fa-solid fa-exclamation-circle mr-2"></i> {loginError}</div>}<button type="submit" disabled={loginForm.processing} className="w-full py-4 rounded-[20px] bg-alaga-blue text-white font-black uppercase tracking-widest text-sm hover:shadow-lg hover:shadow-alaga-blue/50 transition-all active:scale-95 disabled:opacity-60"><i className="fa-solid fa-arrow-right-to-bracket mr-2"></i> Log In Now</button></form><div className="text-center text-xs opacity-60 font-medium">Don&apos;t have an account? <button onClick={() => { setShowLoginPopover(false); setShowPWDSignupPopover(false); setShowStaffSignupPopover(false); setShowPWDIDPopover(true); setLoginError(''); loginForm.reset(); }} className="text-alaga-teal font-black ml-1 hover:underline">Sign up here</button></div></div></div></div>
       )}
 
       {showPWDIDPopover && (
         <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
           <div className="bg-white dark:bg-alaga-charcoal rounded-[48px] w-full max-w-3xl shadow-[0_40px_100px_rgba(0,0,0,0.5)] overflow-hidden animate-in zoom-in-95 duration-300 relative border border-white/10">
-            <button onClick={() => { setShowPWDIDPopover(false); setRegistrationType(null); setSignupError(''); signupForm.reset(); }} className="absolute top-8 right-8 w-12 h-12 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all z-20">
+            <button onClick={() => { setShowPWDIDPopover(false); setPwdSignupError(''); setStaffSignupError(''); pwdSignupForm.reset(); staffSignupForm.reset(); }} className="absolute top-8 right-8 w-12 h-12 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all z-20">
               <i className="fa-solid fa-xmark"></i>
             </button>
             <div className="p-12 md:p-20 space-y-12">
@@ -554,163 +655,230 @@ const LandingPage: React.FC<{ initialSection?: string | null }> = ({ initialSect
         </div>
       )}
 
-      {showSignupPopover && (
+      {showPWDSignupPopover && (
         <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
           <div className="bg-white dark:bg-alaga-charcoal rounded-[48px] w-full max-w-md shadow-[0_40px_100px_rgba(0,0,0,0.5)] overflow-hidden animate-in zoom-in-95 duration-300 relative border border-white/10">
-            <button onClick={() => { setShowSignupPopover(false); setSignupError(''); setRegistrationType(null); signupForm.reset(); }} className="absolute top-8 right-8 w-12 h-12 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all z-20">
+            <button onClick={() => { setShowPWDSignupPopover(false); setPwdSignupError(''); pwdSignupForm.reset(); }} className="absolute top-8 right-8 w-12 h-12 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all z-20">
               <i className="fa-solid fa-xmark"></i>
             </button>
-            <div className="p-12 md:p-16 space-y-8">
+            <div className="p-12 md:p-16 space-y-8 max-h-[80vh] overflow-y-auto">
               <div className="text-center space-y-2">
-                <h3 className="text-3xl font-black">{registrationType === 'staff' ? 'Staff Registration' : 'PWD Registration'}</h3>
+                <h3 className="text-3xl font-black">PWD Registration</h3>
                 <p className="opacity-60 font-medium text-sm">Complete your credentials to pre-fill your profile</p>
               </div>
               <div className="flex items-center justify-between">
-                <button type="button" onClick={() => { setShowSignupPopover(false); setRegistrationType(null); setShowPWDIDPopover(true); }} className="text-xs font-black uppercase tracking-widest opacity-60 hover:opacity-100 transition-opacity">
+                <button type="button" onClick={() => { setShowPWDSignupPopover(false); setShowPWDIDPopover(true); }} className="text-xs font-black uppercase tracking-widest opacity-60 hover:opacity-100 transition-opacity">
                   <i className="fa-solid fa-arrow-left mr-2"></i> Back
                 </button>
-                <span className="text-[10px] font-black uppercase tracking-widest opacity-40">{registrationType === 'staff' ? 'Staff/Admin' : 'PWD Applicant'}</span>
+                <span className="text-[10px] font-black uppercase tracking-widest opacity-40">PWD Applicant</span>
               </div>
-              <form onSubmit={handleSignup} className="space-y-6">
+              <form onSubmit={handlePWDSignup} className="space-y-6">
                 <div>
                   <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">First Name</label>
-                  <input
-                    type="text"
-                    value={signupForm.data.first_name}
-                    onChange={(e) => { signupForm.setData('first_name', e.target.value); setSignupError(''); }}
-                    placeholder="Enter your first name"
-                    className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium"
-                    required
-                  />
+                  <input type="text" value={pwdSignupForm.data.first_name} onChange={(e) => { pwdSignupForm.setData('first_name', e.target.value); setPwdSignupError(''); }} placeholder="Enter your first name" className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium" required />
                 </div>
                 <div>
                   <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Middle Name (Optional)</label>
-                  <input
-                    type="text"
-                    value={signupForm.data.middle_name}
-                    onChange={(e) => { signupForm.setData('middle_name', e.target.value); setSignupError(''); }}
-                    placeholder="Enter your middle name"
-                    className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium"
-                  />
+                  <input type="text" value={pwdSignupForm.data.middle_name} onChange={(e) => { pwdSignupForm.setData('middle_name', e.target.value); setPwdSignupError(''); }} placeholder="Enter your middle name" className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium" />
                 </div>
                 <div>
                   <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Last Name</label>
-                  <input
-                    type="text"
-                    value={signupForm.data.last_name}
-                    onChange={(e) => { signupForm.setData('last_name', e.target.value); setSignupError(''); }}
-                    placeholder="Enter your last name"
-                    className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium"
-                    required
-                  />
+                  <input type="text" value={pwdSignupForm.data.last_name} onChange={(e) => { pwdSignupForm.setData('last_name', e.target.value); setPwdSignupError(''); }} placeholder="Enter your last name" className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium" required />
                 </div>
                 <div>
                   <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Email</label>
-                  <input
-                    type="email"
-                    value={signupForm.data.email}
-                    onChange={(e) => { signupForm.setData('email', e.target.value); setSignupError(''); }}
-                    placeholder="Enter your email"
-                    className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium"
-                    required
-                  />
+                  <input type="email" value={pwdSignupForm.data.email} onChange={(e) => { pwdSignupForm.setData('email', e.target.value); setPwdSignupError(''); }} placeholder="Enter your email" className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium" required />
                 </div>
-
                 <div>
                   <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Contact Number</label>
-                  <input
-                    type="tel"
-                    value={signupForm.data.contact_number}
-                    onChange={(e) => { signupForm.setData('contact_number', e.target.value); setSignupError(''); }}
-                    placeholder="Enter your contact number"
-                    className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium"
-                    required
-                  />
+                  <input type="tel" value={pwdSignupForm.data.contact_number} onChange={(e) => { pwdSignupForm.setData('contact_number', e.target.value); setPwdSignupError(''); }} placeholder="Enter your contact number" className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium" required />
+                </div>
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Address</label>
+                  <input type="text" value={pwdSignupForm.data.address} onChange={(e) => { pwdSignupForm.setData('address', e.target.value); setPwdSignupError(''); }} placeholder="Enter your address" className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium" required />
+                </div>
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Birth Date</label>
+                  <input type="date" value={pwdSignupForm.data.birth_date} onChange={(e) => { pwdSignupForm.setData('birth_date', e.target.value); setPwdSignupError(''); }} className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue font-medium" required />
+                </div>
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Sex</label>
+                  <select value={pwdSignupForm.data.sex} onChange={(e) => { pwdSignupForm.setData('sex', e.target.value); setPwdSignupError(''); }} className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue font-medium" required>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Blood Type</label>
+                  <select value={pwdSignupForm.data.blood_type} onChange={(e) => { pwdSignupForm.setData('blood_type', e.target.value); setPwdSignupError(''); }} className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue font-medium" required>
+                    {['O+','O-','A+','A-','B+','B-','AB+','AB-'].map(bt => (
+                      <option key={bt} value={bt}>{bt}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Disability Category</label>
+                  <select value={pwdSignupForm.data.disability_category} onChange={(e) => { pwdSignupForm.setData('disability_category', e.target.value); setPwdSignupError(''); }} className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue font-medium" required>
+                    {Object.values(DisabilityCategory)
+                      .filter(v => v !== DisabilityCategory.None)
+                      .map(v => (
+                        <option key={v} value={v}>{v}</option>
+                      ))}
+                  </select>
                 </div>
 
-                {registrationType === 'pwd' && (
-                  <>
-                    <div>
-                      <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Address</label>
-                      <input
-                        type="text"
-                        value={signupForm.data.address}
-                        onChange={(e) => { signupForm.setData('address', e.target.value); setSignupError(''); }}
-                        placeholder="Enter your address"
-                        className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Disability Category</label>
-                      <select
-                        value={signupForm.data.disability_category}
-                        onChange={(e) => { signupForm.setData('disability_category', e.target.value); setSignupError(''); }}
-                        className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue font-medium"
-                        required
-                      >
-                        {Object.values(DisabilityCategory)
-                          .filter(v => v !== DisabilityCategory.None)
-                          .map(v => (
-                            <option key={v} value={v}>{v}</option>
-                          ))}
-                      </select>
-                    </div>
-                  </>
-                )}
-
-                {registrationType === 'staff' && (
-                  <div>
-                    <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Position</label>
-                    <input
-                      type="text"
-                      value={signupForm.data.staff_position}
-                      onChange={(e) => { signupForm.setData('staff_position', e.target.value); setSignupError(''); }}
-                      placeholder="Enter your position"
-                      className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium"
-                      required
-                    />
-                  </div>
-                )}
+                <div className="pt-2">
+                  <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Emergency Contact</p>
+                </div>
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Name</label>
+                  <input type="text" value={pwdSignupForm.data.emergency_contact_name} onChange={(e) => { pwdSignupForm.setData('emergency_contact_name', e.target.value); setPwdSignupError(''); }} placeholder="Emergency contact full name" className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium" required />
+                </div>
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Relation</label>
+                  <input type="text" value={pwdSignupForm.data.emergency_contact_relation} onChange={(e) => { pwdSignupForm.setData('emergency_contact_relation', e.target.value); setPwdSignupError(''); }} placeholder="e.g., Parent, Sibling" className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium" required />
+                </div>
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Contact Number</label>
+                  <input type="tel" value={pwdSignupForm.data.emergency_contact_number} onChange={(e) => { pwdSignupForm.setData('emergency_contact_number', e.target.value); setPwdSignupError(''); }} placeholder="Emergency contact number" className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium" required />
+                </div>
 
                 <div>
                   <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Password</label>
-                  <input
-                    type="password"
-                    value={signupForm.data.password}
-                    onChange={(e) => { signupForm.setData('password', e.target.value); setSignupError(''); }}
-                    placeholder="Create a password"
-                    className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium"
-                    required
-                  />
+                  <input type="password" value={pwdSignupForm.data.password} onChange={(e) => { pwdSignupForm.setData('password', e.target.value); setPwdSignupError(''); }} placeholder="Create a password" className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium" required />
                 </div>
                 <div>
                   <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Confirm Password</label>
-                  <input
-                    type="password"
-                    value={signupForm.data.password_confirmation}
-                    onChange={(e) => { signupForm.setData('password_confirmation', e.target.value); setSignupError(''); }}
-                    placeholder="Confirm your password"
-                    className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium"
-                    required
-                  />
+                  <input type="password" value={pwdSignupForm.data.password_confirmation} onChange={(e) => { pwdSignupForm.setData('password_confirmation', e.target.value); setPwdSignupError(''); }} placeholder="Confirm your password" className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium" required />
                 </div>
-                {signupError && (
+
+                {pwdSignupError && (
                   <div className="p-4 rounded-[16px] bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-sm font-black">
-                    <i className="fa-solid fa-exclamation-circle mr-2"></i> {signupError}
+                    <i className="fa-solid fa-exclamation-circle mr-2"></i> {pwdSignupError}
                   </div>
                 )}
-                <button
-                  type="submit"
-                  disabled={signupForm.processing}
-                  className="w-full py-4 rounded-[20px] bg-alaga-gold text-alaga-navy font-black uppercase tracking-widest text-sm hover:shadow-lg hover:shadow-alaga-gold/50 transition-all active:scale-95 disabled:opacity-60"
-                >
+                <button type="submit" disabled={pwdSignupForm.processing} className="w-full py-4 rounded-[20px] bg-alaga-gold text-alaga-navy font-black uppercase tracking-widest text-sm hover:shadow-lg hover:shadow-alaga-gold/50 transition-all active:scale-95 disabled:opacity-60">
                   <i className="fa-solid fa-user-plus mr-2"></i> Register
                 </button>
               </form>
               <div className="text-center text-xs opacity-60 font-medium">
                 Already have an account?
-                <button onClick={() => { setShowSignupPopover(false); setShowLoginPopover(true); setSignupError(''); signupForm.reset(); }} className="text-alaga-blue font-black ml-1 hover:underline">Log in here</button>
+                <button onClick={() => { setShowPWDSignupPopover(false); setShowLoginPopover(true); setPwdSignupError(''); pwdSignupForm.reset(); }} className="text-alaga-blue font-black ml-1 hover:underline">Log in here</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showStaffSignupPopover && (
+        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-alaga-charcoal rounded-[48px] w-full max-w-md shadow-[0_40px_100px_rgba(0,0,0,0.5)] overflow-hidden animate-in zoom-in-95 duration-300 relative border border-white/10">
+            <button onClick={() => { setShowStaffSignupPopover(false); setStaffSignupError(''); staffSignupForm.reset(); }} className="absolute top-8 right-8 w-12 h-12 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all z-20">
+              <i className="fa-solid fa-xmark"></i>
+            </button>
+            <div className="p-12 md:p-16 space-y-8 max-h-[80vh] overflow-y-auto">
+              <div className="text-center space-y-2">
+                <h3 className="text-3xl font-black">Staff Registration</h3>
+                <p className="opacity-60 font-medium text-sm">Complete your credentials to pre-fill your profile</p>
+              </div>
+              <div className="flex items-center justify-between">
+                <button type="button" onClick={() => { setShowStaffSignupPopover(false); setShowPWDIDPopover(true); }} className="text-xs font-black uppercase tracking-widest opacity-60 hover:opacity-100 transition-opacity">
+                  <i className="fa-solid fa-arrow-left mr-2"></i> Back
+                </button>
+                <span className="text-[10px] font-black uppercase tracking-widest opacity-40">Staff/Admin</span>
+              </div>
+              <form onSubmit={handleStaffSignup} className="space-y-6">
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">First Name</label>
+                  <input type="text" value={staffSignupForm.data.first_name} onChange={(e) => { staffSignupForm.setData('first_name', e.target.value); setStaffSignupError(''); }} placeholder="Enter your first name" className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium" required />
+                </div>
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Middle Name (Optional)</label>
+                  <input type="text" value={staffSignupForm.data.middle_name} onChange={(e) => { staffSignupForm.setData('middle_name', e.target.value); setStaffSignupError(''); }} placeholder="Enter your middle name" className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium" />
+                </div>
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Last Name</label>
+                  <input type="text" value={staffSignupForm.data.last_name} onChange={(e) => { staffSignupForm.setData('last_name', e.target.value); setStaffSignupError(''); }} placeholder="Enter your last name" className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium" required />
+                </div>
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Email</label>
+                  <input type="email" value={staffSignupForm.data.email} onChange={(e) => { staffSignupForm.setData('email', e.target.value); setStaffSignupError(''); }} placeholder="Enter your email" className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium" required />
+                </div>
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Contact Number</label>
+                  <input type="tel" value={staffSignupForm.data.contact_number} onChange={(e) => { staffSignupForm.setData('contact_number', e.target.value); setStaffSignupError(''); }} placeholder="Enter your contact number" className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium" required />
+                </div>
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Address</label>
+                  <input type="text" value={staffSignupForm.data.address} onChange={(e) => { staffSignupForm.setData('address', e.target.value); setStaffSignupError(''); }} placeholder="Enter your address" className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium" required />
+                </div>
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Birth Date</label>
+                  <input type="date" value={staffSignupForm.data.birth_date} onChange={(e) => { staffSignupForm.setData('birth_date', e.target.value); setStaffSignupError(''); }} className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue font-medium" required />
+                </div>
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Sex</label>
+                  <select value={staffSignupForm.data.sex} onChange={(e) => { staffSignupForm.setData('sex', e.target.value); setStaffSignupError(''); }} className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue font-medium" required>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Blood Type</label>
+                  <select value={staffSignupForm.data.blood_type} onChange={(e) => { staffSignupForm.setData('blood_type', e.target.value); setStaffSignupError(''); }} className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue font-medium" required>
+                    {['O+','O-','A+','A-','B+','B-','AB+','AB-'].map(bt => (
+                      <option key={bt} value={bt}>{bt}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Office / Department</label>
+                  <input type="text" value={staffSignupForm.data.staff_office} onChange={(e) => { staffSignupForm.setData('staff_office', e.target.value); setStaffSignupError(''); }} placeholder="e.g., PDAO, MSWDO" className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium" required />
+                </div>
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Position</label>
+                  <input type="text" value={staffSignupForm.data.staff_position} onChange={(e) => { staffSignupForm.setData('staff_position', e.target.value); setStaffSignupError(''); }} placeholder="Enter your position" className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium" required />
+                </div>
+
+                <div className="pt-2">
+                  <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Emergency Contact</p>
+                </div>
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Name</label>
+                  <input type="text" value={staffSignupForm.data.emergency_contact_name} onChange={(e) => { staffSignupForm.setData('emergency_contact_name', e.target.value); setStaffSignupError(''); }} placeholder="Emergency contact full name" className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium" required />
+                </div>
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Relation</label>
+                  <input type="text" value={staffSignupForm.data.emergency_contact_relation} onChange={(e) => { staffSignupForm.setData('emergency_contact_relation', e.target.value); setStaffSignupError(''); }} placeholder="e.g., Spouse, Parent" className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium" required />
+                </div>
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Contact Number</label>
+                  <input type="tel" value={staffSignupForm.data.emergency_contact_number} onChange={(e) => { staffSignupForm.setData('emergency_contact_number', e.target.value); setStaffSignupError(''); }} placeholder="Emergency contact number" className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium" required />
+                </div>
+
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Password</label>
+                  <input type="password" value={staffSignupForm.data.password} onChange={(e) => { staffSignupForm.setData('password', e.target.value); setStaffSignupError(''); }} placeholder="Create a password" className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium" required />
+                </div>
+                <div>
+                  <label className="text-xs font-black uppercase tracking-widest opacity-60 block mb-3">Confirm Password</label>
+                  <input type="password" value={staffSignupForm.data.password_confirmation} onChange={(e) => { staffSignupForm.setData('password_confirmation', e.target.value); setStaffSignupError(''); }} placeholder="Confirm your password" className="w-full px-6 py-4 rounded-[20px] bg-alaga-gray dark:bg-white/5 border border-alaga-gold/20 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-alaga-blue placeholder:opacity-30 font-medium" required />
+                </div>
+
+                {staffSignupError && (
+                  <div className="p-4 rounded-[16px] bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-sm font-black">
+                    <i className="fa-solid fa-exclamation-circle mr-2"></i> {staffSignupError}
+                  </div>
+                )}
+                <button type="submit" disabled={staffSignupForm.processing} className="w-full py-4 rounded-[20px] bg-alaga-gold text-alaga-navy font-black uppercase tracking-widest text-sm hover:shadow-lg hover:shadow-alaga-gold/50 transition-all active:scale-95 disabled:opacity-60">
+                  <i className="fa-solid fa-user-plus mr-2"></i> Register
+                </button>
+              </form>
+              <div className="text-center text-xs opacity-60 font-medium">
+                Already have an account?
+                <button onClick={() => { setShowStaffSignupPopover(false); setShowLoginPopover(true); setStaffSignupError(''); staffSignupForm.reset(); }} className="text-alaga-blue font-black ml-1 hover:underline">Log in here</button>
               </div>
             </div>
           </div>
