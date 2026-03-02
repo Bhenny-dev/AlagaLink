@@ -4,6 +4,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import { useAppContext } from '@/Providers/AlagaLink/AppContext';
 import { ProgramAvailment, LivelihoodProgram, AssistiveDevice, MedicalService, UserProfile, DisabilityCategory } from '@/Providers/AlagaLink/types';
+import axios from 'axios';
 
 // Refactored Components
 import AdminEvaluationOverlay from '@/Components/AlagaLink/programs/AdminEvaluationOverlay';
@@ -63,8 +64,14 @@ const Programs: React.FC = () => {
           const req = programRequests.find(r => r.id === searchSignal.itemId);
           if (req) {
             Promise.resolve().then(() => {
-              setSelectedRequest(req);
-              setActiveModal('none');
+              if (isAdmin) {
+                setSelectedRequest(req);
+                setActiveModal('none');
+              } else {
+                // Non-admin users should never see the admin evaluation overlay.
+                setSelectedRequest(null);
+                setActiveModal(req.programType as ProgramModalType);
+              }
             });
           }
         } else {
@@ -74,7 +81,7 @@ const Programs: React.FC = () => {
       // Clear the signal after handling
       setSearchSignal(null);
     }
-  }, [searchSignal, programRequests, setSearchSignal]);
+  }, [searchSignal, programRequests, setSearchSignal, isAdmin]);
 
   const idSearchResults = useMemo(() => {
     if (!idSearchQuery) return [];
@@ -131,7 +138,7 @@ const Programs: React.FC = () => {
       return;
     }
 
-    const reqId = `req-${++idCounterRef.current}`;
+    const reqId = `req-${Date.now()}-${Math.random().toString(16).slice(2)}`;
     const newReq: ProgramAvailment = {
       id: reqId,
       userId: targetUserId,
@@ -158,6 +165,38 @@ const Programs: React.FC = () => {
     }
   };
 
+  const toggleInventoryVisibility = (itemType: 'Device' | 'Medical' | 'Livelihood', id: string) => {
+    if (itemType === 'Device') {
+      setDevices(prev => prev.map(d => d.id === id ? { ...d, isVisible: !d.isVisible } : d));
+      const next = devices.find(d => d.id === id);
+      axios.patch('/api/alagalink/programs/' + encodeURIComponent(id), { isVisible: !(next?.isVisible ?? true) })
+        .catch((e) => console.error('Failed to persist visibility toggle:', e));
+      return;
+    }
+
+    if (itemType === 'Medical') {
+      setMedicalServices(prev => prev.map(m => m.id === id ? { ...m, isVisible: !m.isVisible } : m));
+      const next = medicalServices.find(m => m.id === id);
+      axios.patch('/api/alagalink/programs/' + encodeURIComponent(id), { isVisible: !(next?.isVisible ?? true) })
+        .catch((e) => console.error('Failed to persist visibility toggle:', e));
+      return;
+    }
+
+    setLivelihoodPrograms(prev => prev.map(l => l.id === id ? { ...l, isVisible: !l.isVisible } : l));
+    const next = livelihoodPrograms.find(l => l.id === id);
+    axios.patch('/api/alagalink/programs/' + encodeURIComponent(id), { isVisible: !(next?.isVisible ?? true) })
+      .catch((e) => console.error('Failed to persist visibility toggle:', e));
+  };
+
+  const removeInventoryItem = (itemType: 'Device' | 'Medical' | 'Livelihood', id: string) => {
+    if (itemType === 'Device') setDevices(prev => prev.filter(d => d.id !== id));
+    if (itemType === 'Medical') setMedicalServices(prev => prev.filter(m => m.id !== id));
+    if (itemType === 'Livelihood') setLivelihoodPrograms(prev => prev.filter(l => l.id !== id));
+
+    axios.delete('/api/alagalink/programs/' + encodeURIComponent(id))
+      .catch((e) => console.error('Failed to persist inventory delete:', e));
+  };
+
   const handleRegisterNewMember = (formData: Partial<UserProfile>) => {
     const f = formData as Partial<UserProfile>;
     const photoSeed = ++idCounterRef.current % 100;
@@ -179,7 +218,8 @@ const Programs: React.FC = () => {
   // Inventory Update Handlers
   const handleUpdateInventory = (itemType: string, itemData: Partial<AssistiveDevice | MedicalService | LivelihoodProgram>) => {
     const isNew = !itemData.id;
-    const finalData = { ...(itemData as Partial<AssistiveDevice | MedicalService | LivelihoodProgram>), id: isNew ? `item-${Date.now()}` : itemData.id } as Partial<AssistiveDevice | MedicalService | LivelihoodProgram>;
+    const generatedId = `item-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const finalData = { ...(itemData as Partial<AssistiveDevice | MedicalService | LivelihoodProgram>), id: isNew ? generatedId : itemData.id } as Partial<AssistiveDevice | MedicalService | LivelihoodProgram>;
 
     if (itemType === 'Device') {
       setDevices(prev => isNew ? [finalData as AssistiveDevice, ...prev] : prev.map(d => d.id === finalData.id ? finalData as AssistiveDevice : d));
@@ -188,6 +228,33 @@ const Programs: React.FC = () => {
     } else if (itemType === 'Livelihood') {
       setLivelihoodPrograms(prev => isNew ? [finalData as LivelihoodProgram, ...prev] : prev.map(l => l.id === finalData.id ? finalData as LivelihoodProgram : l));
     }
+
+    // Persist to server so it remains after refresh.
+    const title = (finalData as any).name || (finalData as any).title || '';
+    const isVisible = (finalData as any).isVisible;
+    const stockCount = (finalData as any).stockCount;
+
+    axios.post('/api/alagalink/programs', {
+      id: finalData.id,
+      type: itemType,
+      title,
+      isVisible,
+      stockCount,
+      data: finalData,
+    }).then((response) => {
+      const saved = response?.data?.program;
+      if (!saved?.id) return;
+
+      if (itemType === 'Device') {
+        setDevices(prev => prev.map(d => d.id === saved.id ? saved : d));
+      } else if (itemType === 'Medical') {
+        setMedicalServices(prev => prev.map(m => m.id === saved.id ? saved : m));
+      } else if (itemType === 'Livelihood') {
+        setLivelihoodPrograms(prev => prev.map(l => l.id === saved.id ? saved : l));
+      }
+    }).catch((e) => {
+      console.error('Failed to persist inventory item:', e);
+    });
   };
 
   const renderApplicationForm = () => {
@@ -589,9 +656,9 @@ const Programs: React.FC = () => {
     switch (activeModal) {
       case 'ID': return renderIDPortal();
       case 'PhilHealth': return <PhilHealthPortal isAdmin={isAdmin} requests={programRequests} users={users} onApply={(t, title) => setApplyingForItem({ type: t, item: { title, photoUrl: 'https://picsum.photos/seed/ph-logo/400/400' } })} onSelectRequest={setSelectedRequest} />;
-      case 'Device': return <InventoryPortal type="Device" isAdmin={isAdmin} requests={programRequests} items={devices} users={users} onApply={(t, title, id) => setApplyingForItem({ type: t, item: devices.find(d => d.id === id) })} onSelectRequest={setSelectedRequest} onEditItem={(item) => handleUpdateInventory('Device', item)} onToggleVisibility={(id) => setDevices(prev => prev.map(d => d.id === id ? {...d, isVisible: !d.isVisible} : d))} onRemoveItem={(id) => setDevices(prev => prev.filter(d => d.id !== id))} />;
-      case 'Medical': return <InventoryPortal type="Medical" isAdmin={isAdmin} requests={programRequests} items={medicalServices} users={users} onApply={(t, title, id) => setApplyingForItem({ type: t, item: medicalServices.find(m => m.id === id) })} onSelectRequest={setSelectedRequest} onEditItem={(item) => handleUpdateInventory('Medical', item)} onToggleVisibility={(id) => setMedicalServices(prev => prev.map(m => m.id === id ? {...m, isVisible: !m.isVisible} : m))} onRemoveItem={(id) => setMedicalServices(prev => prev.filter(m => m.id !== id))} />;
-      case 'Livelihood': return <InventoryPortal type="Livelihood" isAdmin={isAdmin} requests={programRequests} items={livelihoodPrograms} users={users} onApply={(t, title, id) => setApplyingForItem({ type: t, item: livelihoodPrograms.find(l => l.id === id) })} onSelectRequest={setSelectedRequest} onEditItem={(item) => handleUpdateInventory('Livelihood', item)} onToggleVisibility={(id) => setLivelihoodPrograms(prev => prev.map(l => l.id === id ? {...l, isVisible: !l.isVisible} : l))} onRemoveItem={(id) => setLivelihoodPrograms(prev => prev.filter(l => l.id !== id))} />;
+      case 'Device': return <InventoryPortal type="Device" isAdmin={isAdmin} requests={programRequests} items={devices} users={users} onApply={(t, title, id) => setApplyingForItem({ type: t, item: devices.find(d => d.id === id) })} onSelectRequest={setSelectedRequest} onEditItem={(item) => handleUpdateInventory('Device', item)} onToggleVisibility={(id) => toggleInventoryVisibility('Device', id)} onRemoveItem={(id) => removeInventoryItem('Device', id)} />;
+      case 'Medical': return <InventoryPortal type="Medical" isAdmin={isAdmin} requests={programRequests} items={medicalServices} users={users} onApply={(t, title, id) => setApplyingForItem({ type: t, item: medicalServices.find(m => m.id === id) })} onSelectRequest={setSelectedRequest} onEditItem={(item) => handleUpdateInventory('Medical', item)} onToggleVisibility={(id) => toggleInventoryVisibility('Medical', id)} onRemoveItem={(id) => removeInventoryItem('Medical', id)} />;
+      case 'Livelihood': return <InventoryPortal type="Livelihood" isAdmin={isAdmin} requests={programRequests} items={livelihoodPrograms} users={users} onApply={(t, title, id) => setApplyingForItem({ type: t, item: livelihoodPrograms.find(l => l.id === id) })} onSelectRequest={setSelectedRequest} onEditItem={(item) => handleUpdateInventory('Livelihood', item)} onToggleVisibility={(id) => toggleInventoryVisibility('Livelihood', id)} onRemoveItem={(id) => removeInventoryItem('Livelihood', id)} />;
       default: return (
         <div className="space-y-16">
           {/* My Tracking Board */}

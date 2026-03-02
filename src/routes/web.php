@@ -2,7 +2,12 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AlagaLink\DirectMessageController;
+use App\Http\Controllers\AlagaLink\LostReportController;
+use App\Http\Controllers\AlagaLink\NotificationController;
+use App\Http\Controllers\AlagaLink\ProgramAvailmentController;
+use App\Http\Controllers\AlagaLink\ProgramInventoryController;
 use App\Http\Controllers\AlagaLink\UserProfileController;
+use App\Http\Controllers\AlagaLink\CustomSectionController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -34,6 +39,20 @@ Route::middleware('auth')->prefix('api')->group(function () {
 
     Route::post('/alagalink/users', [UserProfileController::class, 'store']);
     Route::patch('/alagalink/users/{alagalinkId}', [UserProfileController::class, 'update']);
+
+    Route::post('/alagalink/reports', [LostReportController::class, 'store']);
+
+    Route::post('/alagalink/program-availments', [ProgramAvailmentController::class, 'store']);
+    Route::patch('/alagalink/program-availments/{id}', [ProgramAvailmentController::class, 'update']);
+
+    Route::patch('/alagalink/notifications/{id}', [NotificationController::class, 'markRead']);
+    Route::post('/alagalink/notifications/clear', [NotificationController::class, 'clear']);
+
+    Route::put('/alagalink/custom-sections', [CustomSectionController::class, 'update']);
+
+    Route::post('/alagalink/programs', [ProgramInventoryController::class, 'store']);
+    Route::patch('/alagalink/programs/{id}', [ProgramInventoryController::class, 'update']);
+    Route::delete('/alagalink/programs/{id}', [ProgramInventoryController::class, 'destroy']);
 });
 
 require __DIR__.'/auth.php';

@@ -12,11 +12,11 @@ type MemberGroup = 'PWD' | 'Staff';
 type MemberTab = 'Registered' | 'Register' | 'Pending' | 'Suspended';
 
 const Members: React.FC = () => {
-  const { 
+  const {
     users, currentUser, customSections, addUser, updateUser,
     globalSearchQuery, globalSearchFilter, setGlobalSearchFilter, searchSignal, setSearchSignal
   } = useAppContext();
-  
+
   const [activeGroup, setActiveGroup] = useState<MemberGroup>('PWD');
   const [activeTab, setActiveTab] = useState<MemberTab>('Registered');
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
@@ -99,10 +99,10 @@ const Members: React.FC = () => {
   const handleRegisterSubmit = (formData: Partial<UserProfile> & { sex?: string }) => {
     const f = formData as Partial<UserProfile> & { sex?: string };
     const photoUrl = f.photoUrl || `https://randomuser.me/api/portraits/${(f.sex === 'Female' ? 'women' : 'men')}/${Math.floor(Math.random()*99)}.jpg`;
-    
+
     // Explicitly handle staff role creation
     const isStaffGroup = activeGroup === 'Staff';
-    
+
     const newUser: UserProfile = {
       ...(formData as UserProfile),
       id: isStaffGroup ? `ADM-LT-${Date.now()}` : `LT-PWD-${Date.now()}`,
@@ -201,9 +201,9 @@ const Members: React.FC = () => {
 
         <div className="flex bg-white dark:bg-alaga-charcoal p-1 rounded-2xl shadow-sm border border-gray-100 dark:border-white/5 overflow-x-auto no-scrollbar w-fit">
           {(['Registered', 'Register', 'Pending', 'Suspended'] as MemberTab[]).map(tab => (
-            <button 
-              key={tab} 
-              onClick={() => { setActiveTab(tab); setGlobalSearchFilter(tab); }} 
+            <button
+              key={tab}
+              onClick={() => { setActiveTab(tab); setGlobalSearchFilter(tab); }}
               className={`px-6 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 ${activeTab === tab ? 'bg-alaga-blue text-white shadow-lg' : 'opacity-60 hover:bg-alaga-blue/5'}`}
             >
               {tab}
@@ -224,7 +224,7 @@ const Members: React.FC = () => {
         </div>
       ) : (
         <div className="py-4 animate-in zoom-in-95 duration-500">
-          <RegistrationWorkflow 
+          <RegistrationWorkflow
             key={`${activeGroup}-${activeTab}`}
             onSubmit={handleRegisterSubmit}
             onCancel={() => setActiveTab('Registered')}
@@ -239,12 +239,12 @@ const Members: React.FC = () => {
             <button onClick={closeDetail} className="absolute top-6 right-6 text-gray-400 z-[210] hover:text-red-500 transition-colors"><i className="fa-solid fa-circle-xmark text-2xl"></i></button>
             {isEditing ? (
               <div className="p-8">
-                <RegistrationWorkflow 
-                  isEditMode={true} 
-                  initialData={selectedUser} 
-                  
-                  onSubmit={handleUpdateProfile} 
-                  onCancel={() => setIsEditing(false)} 
+                <RegistrationWorkflow
+                  isEditMode={true}
+                  initialData={selectedUser}
+
+                  onSubmit={handleUpdateProfile}
+                  onCancel={() => setIsEditing(false)}
                 />
               </div>
             ) : (
@@ -276,6 +276,32 @@ const Members: React.FC = () => {
                         {selectedUser.status === 'Pending' && (
                           <button onClick={() => { updateUser({...selectedUser, status: 'Active'}); closeDetail(); }} className="w-full bg-alaga-teal text-white py-4 rounded-2xl font-black text-xs shadow-xl hover:scale-[1.02] transition-all">Verify & Activate</button>
                         )}
+
+                        {selectedUser.status === 'Active' && (
+                          <button
+                            onClick={() => {
+                              if (!confirm(`Suspend ${selectedUser.firstName} ${selectedUser.lastName}'s account?`)) return;
+                              updateUser({ ...selectedUser, status: 'Suspended' });
+                              closeDetail();
+                            }}
+                            className="w-full bg-red-500/10 text-red-600 border border-red-500/20 py-4 rounded-2xl font-black text-xs shadow-xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
+                          >
+                            <i className="fa-solid fa-user-lock"></i> Suspend Account
+                          </button>
+                        )}
+
+                        {selectedUser.status === 'Suspended' && (
+                          <button
+                            onClick={() => {
+                              if (!confirm(`Lift suspension for ${selectedUser.firstName} ${selectedUser.lastName}?`)) return;
+                              updateUser({ ...selectedUser, status: 'Active' });
+                              closeDetail();
+                            }}
+                            className="w-full bg-alaga-teal text-white py-4 rounded-2xl font-black text-xs shadow-xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
+                          >
+                            <i className="fa-solid fa-unlock-keyhole"></i> Lift Suspension
+                          </button>
+                        )}
                       </>
                     ) : (
                       <div className="p-4 bg-gray-100 dark:bg-white/5 rounded-2xl text-center">
@@ -285,7 +311,7 @@ const Members: React.FC = () => {
                       </div>
                     )}
                     {isSuperAdmin && (selectedUser.role === 'Admin' || selectedUser.role === 'SuperAdmin') && (
-                      <button 
+                      <button
                         onClick={handleToggleStaffRole}
                         disabled={selectedUser.id === PRIMARY_ADMIN_ID}
                         className={`w-full py-4 rounded-2xl font-black text-xs shadow-xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2 mt-4 ${selectedUser.role === 'SuperAdmin' ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'bg-purple-600 text-white'} ${selectedUser.id === PRIMARY_ADMIN_ID ? 'opacity-30 cursor-not-allowed grayscale' : ''}`}
@@ -357,7 +383,7 @@ const Members: React.FC = () => {
       {/* Promotion Reason Pop-over */}
       {isPromotionModalOpen && selectedUser && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-alaga-charcoal rounded-[32px] w-full max-w-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+          <div className="bg-white dark:bg-alaga-charcoal rounded-[32px] w-full max-w-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
             <header className="p-8 bg-purple-600 text-white relative">
               <div className="absolute top-0 right-0 p-6 opacity-10 rotate-12">
                 <i className="fa-solid fa-crown text-8xl"></i>
@@ -365,8 +391,8 @@ const Members: React.FC = () => {
               <h3 className="text-2xl font-black">Administrative Elevation</h3>
               <p className="text-[10px] font-black uppercase tracking-widest opacity-80 mt-1">Role: Super Admin Promotion</p>
             </header>
-            
-            <div className="p-8 space-y-8">
+
+            <div className="p-8 space-y-8 overflow-y-auto no-scrollbar">
               <div className="flex items-center gap-4 p-4 bg-purple-600/5 border border-purple-600/10 rounded-2xl">
                 {selectedUser.photoUrl ? (
                   <Image src={selectedUser.photoUrl} width={48} height={48} className="w-12 h-12 rounded-xl object-cover" alt={`${selectedUser.firstName} ${selectedUser.lastName}`} />
@@ -386,7 +412,7 @@ const Members: React.FC = () => {
                 </h4>
                 <div className="grid grid-cols-2 gap-3">
                   {['Exceeds Expectations', 'Outstanding Merit', 'Senior Leadership', 'Technical Mastery'].map(rating => (
-                    <button 
+                    <button
                       key={rating}
                       onClick={() => setPromotionReasonData({...promotionReasonData, rating})}
                       className={`px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-tighter border-2 transition-all ${promotionReasonData.rating === rating ? 'bg-purple-600 border-purple-600 text-white' : 'bg-gray-50 border-gray-100 dark:bg-white/5 dark:border-white/5 opacity-50'}`}
@@ -406,11 +432,11 @@ const Members: React.FC = () => {
                   {['Crisis Management', 'Community Outreach', 'System Integrity', 'Resource Management', 'Ethical Standards'].map(comp => {
                     const isSelected = promotionReasonData.competencies.includes(comp);
                     return (
-                      <button 
+                      <button
                         key={comp}
                         onClick={() => {
-                          const newComps = isSelected 
-                            ? promotionReasonData.competencies.filter(c => c !== comp) 
+                          const newComps = isSelected
+                            ? promotionReasonData.competencies.filter(c => c !== comp)
                             : [...promotionReasonData.competencies, comp];
                           setPromotionReasonData({...promotionReasonData, competencies: newComps});
                         }}
@@ -426,7 +452,7 @@ const Members: React.FC = () => {
               {/* Section: Justification */}
               <div className="space-y-2">
                 <h4 className="text-[10px] font-black uppercase tracking-widest opacity-40">Justification Narrative</h4>
-                <textarea 
+                <textarea
                   value={promotionReasonData.justification}
                   onChange={e => setPromotionReasonData({...promotionReasonData, justification: e.target.value})}
                   rows={4}
@@ -436,14 +462,14 @@ const Members: React.FC = () => {
               </div>
 
               <div className="flex gap-4 pt-4">
-                <button 
+                <button
                   onClick={submitPromotion}
                   disabled={!promotionReasonData.justification || promotionReasonData.competencies.length === 0}
                   className="flex-1 bg-purple-600 text-white py-5 rounded-2xl font-black text-sm shadow-xl shadow-purple-600/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-30 disabled:grayscale"
                 >
                   Finalize Promotion
                 </button>
-                <button 
+                <button
                   onClick={() => setIsPromotionModalOpen(false)}
                   className="px-8 py-5 bg-gray-100 dark:bg-white/5 rounded-2xl font-black text-sm opacity-40 hover:opacity-100 transition-all"
                 >

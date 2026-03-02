@@ -41,6 +41,7 @@ type AlagaLinkSeed = {
   livelihoods: LivelihoodProgram[];
   updates: SystemUpdate[];
   about: AboutInfo | null;
+  customSections?: FormSection[];
 } | null;
 
 interface AppContextType {
@@ -97,6 +98,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialLaravelUs
   const seededLivelihoods = ((initialSeed?.livelihoods ?? []) as LivelihoodProgram[]);
   const seededUpdates = ((initialSeed?.updates ?? []) as SystemUpdate[]);
   const seededAbout = (initialSeed?.about ?? null) as AboutInfo | null;
+  const seededCustomSections = ((initialSeed?.customSections ?? []) as FormSection[]);
 
   const seededUser = useMemo(() => {
     if (!initialLaravelUser?.email) return null;
@@ -149,9 +151,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialLaravelUs
   const [livelihoodPrograms] = useState<LivelihoodProgram[]>(seededLivelihoods);
   const [updates] = useState<SystemUpdate[]>(seededUpdates);
   const [about] = useState<AboutInfo | null>(seededAbout ?? null);
-  const [customSections, setCustomSections] = useState<FormSection[]>([]);
+  const [customSections, setCustomSections] = useState<FormSection[]>(seededCustomSections);
   const [directMessages, setDirectMessages] = useState<Record<string, DirectMessage[]>>({});
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    try {
+      return window.localStorage.getItem('alagalink:darkMode') === '1';
+    } catch {
+      return false;
+    }
+  });
+
+  // Keep server-seeded data in sync across Inertia navigations.
+  useEffect(() => {
+    setNotifications(seededNotifications);
+  }, [seededNotifications]);
+
+  useEffect(() => {
+    setCustomSections(seededCustomSections);
+  }, [seededCustomSections]);
   const [globalSearchQuery, setGlobalSearchQuery] = useState('');
   const [globalSearchFilter, setGlobalSearchFilter] = useState('All');
   const [searchSignal, setSearchSignal] = useState<SearchSignal | null>(null);
@@ -161,6 +178,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialLaravelUs
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
+    }
+
+    try {
+      window.localStorage.setItem('alagalink:darkMode', isDarkMode ? '1' : '0');
+    } catch {
+      // ignore storage errors
     }
   }, [isDarkMode]);
 
@@ -208,18 +231,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialLaravelUs
   };
 
   const addReport = (report: LostReport) => {
-    setReports([report, ...reports]);
-    const adminNotif: Notification = {
-      id: `notif-report-${Date.now()}`,
-      targetRole: 'Admin',
-      title: 'New Incident Reported',
-      message: `Admin, a new missing person report has been filed for ${report.name}. Immediate verification required.`,
-      type: 'Urgent',
-      date: new Date().toISOString(),
-      isRead: false,
-      link: `lost-found:report:${report.id}`
-    };
-    setNotifications([adminNotif, ...notifications]);
+    setReports(prev => [report, ...prev]);
+
+    axios.post('/api/alagalink/reports', report)
+      .then((response) => {
+        const saved = response?.data?.report as LostReport | undefined;
+        if (!saved?.id) return;
+        setReports(prev => prev.map(r => (r.id === report.id ? saved : r)));
+
+        const createdNotifs = response?.data?.notifications as Notification[] | undefined;
+        if (Array.isArray(createdNotifs) && createdNotifs.length > 0) {
+          setNotifications(prev => [...createdNotifs, ...prev]);
+        }
+      })
+      .catch((e) => {
+        console.error('Failed to persist lost report:', e);
+      });
   };
 
   const addUser = (user: UserProfile) => {
@@ -278,18 +305,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialLaravelUs
 
   const updateProgramRequest = (updatedReq: ProgramAvailment) => {
     setProgramRequests(prev => prev.map(r => r.id === updatedReq.id ? updatedReq : r));
-    const userNotif: Notification = {
-      id: `notif-update-${Date.now()}`,
-      userId: updatedReq.userId,
-      title: `Application ${updatedReq.status}`,
-      message: `Your request for ${updatedReq.title} has been updated to ${updatedReq.status}.`,
-      type: updatedReq.status === 'Approved' || updatedReq.status === 'Completed' ? 'Success' : updatedReq.status === 'Rejected' ? 'Urgent' : 'Info',
-      date: new Date().toISOString(),
-      isRead: false,
-      link: `programs:requests:${updatedReq.id}`,
-      programType: updatedReq.programType
-    };
-    setNotifications([userNotif, ...notifications]);
+
+    axios.patch('/api/alagalink/program-availments/' + encodeURIComponent(updatedReq.id), updatedReq)
+      .then((response) => {
+        const saved = response?.data?.request as ProgramAvailment | undefined;
+        if (!saved?.id) return;
+        setProgramRequests(prev => prev.map(r => r.id === saved.id ? saved : r));
+      })
+      .catch((e) => {
+        console.error('Failed to persist updated program request:', e);
+      });
 
     if (currentUser && updatedReq.userId === currentUser.id) {
        const updatedHistory = currentUser.history.programs.map(p => p.id === updatedReq.id ? updatedReq : p);
@@ -307,46 +332,68 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialLaravelUs
   };
 
   const addProgramRequest = (newReq: ProgramAvailment) => {
-    setProgramRequests([newReq, ...programRequests]);
-    const userNotif: Notification = {
-      id: `notif-user-${Date.now()}`,
-      userId: newReq.userId,
-      title: 'Request Logged',
-      message: `We have received your application for ${newReq.title}. It is now pending evaluation.`,
-      type: 'Info',
-      date: new Date().toISOString(),
-      isRead: false,
-      link: `programs:requests:${newReq.id}`,
-      programType: newReq.programType
-    };
-    const adminNotif: Notification = {
-      id: `notif-admin-${Date.now()}`,
-      targetRole: 'Admin',
-      title: 'New Evaluation Pending',
-      message: `A new ${newReq.programType} request has been submitted and requires administrative review.`,
-      type: 'Warning',
-      date: new Date().toISOString(),
-      isRead: false,
-      link: `programs:requests:${newReq.id}`,
-      programType: newReq.programType
-    };
-    setNotifications([userNotif, adminNotif, ...notifications]);
+    setProgramRequests(prev => [newReq, ...prev]);
+
+    axios.post('/api/alagalink/program-availments', newReq)
+      .then((response) => {
+        const saved = response?.data?.request as ProgramAvailment | undefined;
+        if (!saved?.id) return;
+        setProgramRequests(prev => prev.map(r => r.id === newReq.id ? saved : r));
+
+        const createdNotifs = response?.data?.notifications as Notification[] | undefined;
+        if (Array.isArray(createdNotifs) && createdNotifs.length > 0) {
+          setNotifications(prev => [...createdNotifs, ...prev]);
+        }
+      })
+      .catch((e) => {
+        console.error('Failed to persist created program request:', e);
+      });
   };
 
   const markNotificationRead = (id: string) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+
+    axios.patch('/api/alagalink/notifications/' + encodeURIComponent(id), {})
+      .catch((e) => {
+        console.error('Failed to persist notification read state:', e);
+      });
   };
 
   const clearAllNotifications = () => {
     setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+
+    axios.post('/api/alagalink/notifications/clear', {})
+      .catch((e) => {
+        console.error('Failed to persist notification clear:', e);
+      });
   };
 
   const addCustomSection = (label: string) => {
-    setCustomSections([...customSections, { id: Date.now().toString(), label }]);
+    const next = [...customSections, { id: Date.now().toString(), label }];
+    setCustomSections(next);
+
+    axios.put('/api/alagalink/custom-sections', { customSections: next })
+      .then((response) => {
+        const saved = response?.data?.customSections as FormSection[] | undefined;
+        if (Array.isArray(saved)) setCustomSections(saved);
+      })
+      .catch((e) => {
+        console.error('Failed to persist custom sections:', e);
+      });
   };
 
   const removeCustomSection = (id: string) => {
-    setCustomSections(customSections.filter(s => s.id !== id));
+    const next = customSections.filter(s => s.id !== id);
+    setCustomSections(next);
+
+    axios.put('/api/alagalink/custom-sections', { customSections: next })
+      .then((response) => {
+        const saved = response?.data?.customSections as FormSection[] | undefined;
+        if (Array.isArray(saved)) setCustomSections(saved);
+      })
+      .catch((e) => {
+        console.error('Failed to persist custom sections:', e);
+      });
   };
 
   const threadKeyFor = (peerId: string): { threadKey: string; meta?: DirectMessage['meta'] } | null => {

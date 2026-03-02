@@ -5,7 +5,17 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import { useAppContext } from '@/Providers/AlagaLink/AppContext';
 import NotificationPopover from './notifications/NotificationPopover';
-// Search functionality removed - these imports are no longer needed
+import { UserProfile } from '@/Providers/AlagaLink/types';
+
+type SearchResult = {
+  id: string;
+  title: string;
+  subtitle: string;
+  icon: string;
+  page: string;
+  section?: string;
+  itemId?: string;
+};
 
 const Navbar: React.FC<{ onNavigate: (page: string) => void, currentPage: string }> = ({ onNavigate, currentPage }) => {
   const {
@@ -14,19 +24,33 @@ const Navbar: React.FC<{ onNavigate: (page: string) => void, currentPage: string
     toggleTheme,
     logout,
     setSearchSignal,
-    notifications
+    notifications,
+    users,
+    reports,
+    programRequests,
+    devices,
+    medicalServices,
+    livelihoodPrograms,
+    updates,
+    globalSearchQuery,
+    setGlobalSearchQuery,
   } = useAppContext();
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   // Close profile menu on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
         setShowProfileMenu(false);
+      }
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setIsSearchOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -42,24 +66,22 @@ const Navbar: React.FC<{ onNavigate: (page: string) => void, currentPage: string
     ...(isAdmin ? [{ id: 'members', label: 'Members', icon: 'fa-users' }] : [])
   ], [isAdmin]);
 
-  // NOTE: Search functionality has been removed. universalResults and handleResultClick below are kept for potential future use.
-  // const universalResults = useMemo(() => { ... }, [...]);
-  // const handleResultClick = (res: SearchResult) => { ... };
-
-  const handleNavigate = (id: string) => {
+  const handleNavigate = (id: string, opts?: { force?: boolean }) => {
     // If the target is an in-page anchor, scroll smoothly instead of navigating away
-    const anchorMap: Record<string, string> = {
-      home: 'home',
-      programs: 'programs',
-      'lost-found': 'community-vigil'
-    };
-    const anchorId = anchorMap[id];
-    if (anchorId) {
-      const el = document.getElementById(anchorId);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth' });
-        setIsMobileMenuOpen(false);
-        return;
+    if (!opts?.force) {
+      const anchorMap: Record<string, string> = {
+        home: 'home',
+        programs: 'programs',
+        'lost-found': 'community-vigil'
+      };
+      const anchorId = anchorMap[id];
+      if (anchorId) {
+        const el = document.getElementById(anchorId);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth' });
+          setIsMobileMenuOpen(false);
+          return;
+        }
       }
     }
 
@@ -68,6 +90,150 @@ const Navbar: React.FC<{ onNavigate: (page: string) => void, currentPage: string
   };
 
   const unreadNotifs = notifications.filter(n => !n.isRead).length;
+
+  const universalResults = useMemo<SearchResult[]>(() => {
+    const q = globalSearchQuery.trim().toLowerCase();
+    if (!q) return [];
+
+    const results: SearchResult[] = [];
+
+    const pushUnique = (r: SearchResult) => {
+      if (results.some(x => x.id === r.id)) return;
+      results.push(r);
+    };
+
+    // Users (Admins only; SuperAdmin can see staff too)
+    if (isAdmin) {
+      const canSeeStaff = currentUser?.role === 'SuperAdmin';
+      users.forEach((u: UserProfile) => {
+        const hay = `${u.firstName} ${u.lastName} ${u.id} ${u.email}`.toLowerCase();
+        if (!hay.includes(q)) return;
+
+        const isStaff = u.role === 'Admin' || u.role === 'SuperAdmin';
+        if (isStaff && !canSeeStaff) return;
+
+        pushUnique({
+          id: `user:${u.id}`,
+          title: `${u.firstName} ${u.lastName}`,
+          subtitle: `${u.id} • ${u.status}`,
+          icon: 'fa-user',
+          page: 'members',
+          itemId: u.id,
+        });
+      });
+    } else if (currentUser) {
+      // Regular user: quick link to own profile
+      const hay = `${currentUser.firstName} ${currentUser.lastName} ${currentUser.id} profile`.toLowerCase();
+      if (hay.includes(q) || q.includes('profile') || q.includes('me')) {
+        pushUnique({
+          id: `me:${currentUser.id}`,
+          title: 'My Identity Profile',
+          subtitle: currentUser.id,
+          icon: 'fa-id-badge',
+          page: 'profile',
+        });
+      }
+    }
+
+    // Lost & Found reports
+    reports.forEach(r => {
+      const hay = `${r.name} ${r.id} ${r.status} ${r.lastSeen}`.toLowerCase();
+      if (!hay.includes(q)) return;
+      pushUnique({
+        id: `report:${r.id}`,
+        title: r.name,
+        subtitle: `Lost & Found • ${r.status}`,
+        icon: 'fa-magnifying-glass-location',
+        page: 'lost-found',
+        itemId: r.id,
+      });
+    });
+
+    // Program requests
+    programRequests.forEach(req => {
+      if (!isAdmin && currentUser && req.userId !== currentUser.id) return;
+      const user = users.find(u => u.id === req.userId);
+      const who = user ? `${user.firstName} ${user.lastName}` : req.userId;
+      const hay = `${req.title} ${req.id} ${req.programType} ${req.status} ${who}`.toLowerCase();
+      if (!hay.includes(q)) return;
+
+      pushUnique({
+        id: `req:${req.id}`,
+        title: req.title,
+        subtitle: `Request • ${req.programType} • ${req.status}`,
+        icon: 'fa-file-signature',
+        page: 'programs',
+        section: isAdmin ? 'requests' : req.programType,
+        itemId: req.id,
+      });
+    });
+
+    // Programs/Services inventory
+    devices.forEach(d => {
+      const hay = `${d.name} ${d.id} device ${d.category}`.toLowerCase();
+      if (!hay.includes(q)) return;
+      pushUnique({
+        id: `dev:${d.id}`,
+        title: d.name,
+        subtitle: 'Programs • Assistive Device',
+        icon: 'fa-wheelchair',
+        page: 'programs',
+        section: 'Device',
+        itemId: d.id,
+      });
+    });
+    medicalServices.forEach(m => {
+      const hay = `${m.name} ${m.id} medical ${m.category}`.toLowerCase();
+      if (!hay.includes(q)) return;
+      pushUnique({
+        id: `med:${m.id}`,
+        title: m.name,
+        subtitle: 'Programs • Medical Service',
+        icon: 'fa-kit-medical',
+        page: 'programs',
+        section: 'Medical',
+        itemId: m.id,
+      });
+    });
+    livelihoodPrograms.forEach(l => {
+      const hay = `${l.title} ${l.id} livelihood ${l.category}`.toLowerCase();
+      if (!hay.includes(q)) return;
+      pushUnique({
+        id: `live:${l.id}`,
+        title: l.title,
+        subtitle: 'Programs • Livelihood',
+        icon: 'fa-briefcase',
+        page: 'programs',
+        section: 'Livelihood',
+        itemId: l.id,
+      });
+    });
+
+    // Updates/news
+    updates.forEach(upd => {
+      const hay = `${upd.title} ${upd.summary} ${upd.detail}`.toLowerCase();
+      if (!hay.includes(q)) return;
+      pushUnique({
+        id: `news:${upd.id}`,
+        title: upd.title,
+        subtitle: 'Home • Update',
+        icon: 'fa-newspaper',
+        page: 'home',
+        itemId: `news-${upd.id}`,
+      });
+    });
+
+    return results.slice(0, 10);
+  }, [globalSearchQuery, isAdmin, currentUser, users, reports, programRequests, devices, medicalServices, livelihoodPrograms, updates]);
+
+  const handleResultClick = (res: SearchResult) => {
+    if (res.section || res.itemId) {
+      setSearchSignal({ page: res.page, section: res.section, itemId: res.itemId });
+    }
+    setGlobalSearchQuery('');
+    setIsSearchOpen(false);
+    handleNavigate(res.page, { force: true });
+  };
 
   return (
     <nav className="sticky top-0 z-[100] bg-alaga-blue dark:bg-alaga-navy text-white shadow-[0_10px_30px_rgba(0,0,0,0.1)] px-4 py-4 flex items-center justify-between transition-all duration-500">
@@ -81,10 +247,70 @@ const Navbar: React.FC<{ onNavigate: (page: string) => void, currentPage: string
         </div>
       </div>
 
-      {/* Centered Navigation */}
-      <div className="flex-1 flex items-center justify-center hidden md:flex">
+      {/* Center: Global Search + Navigation */}
+      <div className="flex-1 hidden md:flex items-center justify-center gap-4 lg:gap-8 px-6">
+        {/* Global Search */}
+        <div ref={searchRef} className="relative w-full max-w-xl">
+          <div className="relative">
+            <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-white/70 text-sm"></i>
+            <input
+              value={globalSearchQuery}
+              onChange={(e) => {
+                setGlobalSearchQuery(e.target.value);
+                setIsSearchOpen(true);
+              }}
+              onFocus={() => setIsSearchOpen(true)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  setIsSearchOpen(false);
+                }
+                if (e.key === 'Enter') {
+                  const first = universalResults[0];
+                  if (first) handleResultClick(first);
+                }
+              }}
+              placeholder="Search members, reports, requests, programs..."
+              className="w-full pl-11 pr-4 py-3 rounded-[18px] bg-white/10 hover:bg-white/15 focus:bg-white/15 outline-none border border-white/20 text-xs font-black uppercase tracking-widest placeholder:text-white/50 transition-all"
+              aria-label="Global search"
+            />
+          </div>
+
+          {isSearchOpen && globalSearchQuery.trim() !== '' && (
+            <div
+              className="absolute top-full left-0 right-0 mt-3 bg-white dark:bg-alaga-charcoal text-gray-900 dark:text-white rounded-[24px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.35)] border border-gray-100 dark:border-white/10 overflow-hidden z-[250]"
+              role="listbox"
+              aria-label="Search suggestions"
+            >
+              {universalResults.length === 0 ? (
+                <div className="p-6 text-xs font-black uppercase tracking-widest opacity-40">No matches found</div>
+              ) : (
+                <div className="divide-y divide-gray-50 dark:divide-white/5">
+                  {universalResults.map((res) => (
+                    <button
+                      key={res.id}
+                      type="button"
+                      onClick={() => handleResultClick(res)}
+                      className="w-full text-left p-4 hover:bg-alaga-gray dark:hover:bg-alaga-navy/40 transition-all flex items-center gap-4"
+                      role="option"
+                    >
+                      <div className="w-10 h-10 rounded-2xl bg-alaga-blue/10 text-alaga-blue dark:text-alaga-blue flex items-center justify-center shrink-0">
+                        <i className={`fa-solid ${res.icon}`}></i>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs font-black uppercase tracking-wider truncate">{res.title}</div>
+                        <div className="text-[10px] font-bold opacity-50 truncate">{res.subtitle}</div>
+                      </div>
+                      <i className="fa-solid fa-arrow-right-long text-[10px] opacity-30"></i>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Navigation List */}
-        <ul className="flex items-center space-x-1 lg:space-x-2">
+        <ul className="flex items-center space-x-1 lg:space-x-2 shrink-0">
           {navItems.map(item => {
             const navUnread = notifications.filter(n => n.link && n.link.startsWith(item.id)).length;
             return (

@@ -42,7 +42,7 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
-            'alagalink' => fn () => $this->alagaLinkSeed(),
+            'alagalink' => fn () => $this->alagaLinkSeed($request),
         ];
     }
 
@@ -53,7 +53,7 @@ class HandleInertiaRequests extends Middleware
      *
      * @return array<string, mixed>|null
      */
-    private function alagaLinkSeed(): ?array
+    private function alagaLinkSeed(Request $request): ?array
     {
         try {
             if (!Schema::hasTable('users')) {
@@ -129,7 +129,45 @@ class HandleInertiaRequests extends Middleware
 
             $notifications = [];
             if (Schema::hasTable('alagalink_notifications')) {
-                $notifications = AlagaLinkNotification::query()->orderBy('date')->get()->pluck('data')->all();
+                $actor = $request->user();
+                $actorRole = (string) ($actor?->alagalink_role ?? 'User');
+                $actorId = (string) ($actor?->alagalink_id ?? '');
+
+                $notifQuery = AlagaLinkNotification::query();
+
+                if ($actorId !== '') {
+                    $notifQuery->where(function ($q) use ($actorId, $actorRole) {
+                        $q->where('user_id', $actorId)
+                            ->orWhere('target_role', $actorRole);
+                    });
+                } else {
+                    $notifQuery->where('target_role', $actorRole);
+                }
+
+                $notifications = $notifQuery
+                    ->orderByDesc('date')
+                    ->orderByDesc('created_at')
+                    ->limit(250)
+                    ->get()
+                    ->map(function (AlagaLinkNotification $notif) {
+                        $date = $notif->date ?: $notif->created_at;
+                        $dateIso = $date ? $date->toISOString() : now()->toISOString();
+
+                        return [
+                            'id' => (string) $notif->id,
+                            'userId' => $notif->user_id !== null ? (string) $notif->user_id : null,
+                            'targetRole' => $notif->target_role !== null ? (string) $notif->target_role : null,
+                            'title' => (string) $notif->title,
+                            'message' => (string) $notif->message,
+                            'type' => (string) $notif->type,
+                            'date' => $dateIso,
+                            'isRead' => (bool) $notif->is_read,
+                            'link' => $notif->link !== null ? (string) $notif->link : null,
+                            'programType' => $notif->program_type !== null ? (string) $notif->program_type : null,
+                        ];
+                    })
+                    ->values()
+                    ->all();
             }
 
             $updates = [];
@@ -147,8 +185,10 @@ class HandleInertiaRequests extends Middleware
             }
 
             $about = null;
+            $customSections = [];
             if (Schema::hasTable('alagalink_settings')) {
                 $about = AlagaLinkSetting::query()->where('key', 'about')->value('data');
+                $customSections = AlagaLinkSetting::query()->where('key', 'custom_sections')->value('data') ?? [];
             }
 
             return [
@@ -161,6 +201,7 @@ class HandleInertiaRequests extends Middleware
                 'livelihoods' => $livelihoods,
                 'updates' => $updates,
                 'about' => $about,
+                'customSections' => $customSections,
             ];
         } catch (\Throwable) {
             return null;

@@ -124,6 +124,12 @@ const FloatingAssistiveButton: React.FC = () => {
     } else {
       setIsOpen(prev => {
         const next = !prev;
+        // For PWD/member users, always jump straight into the PDAO Office thread.
+        if (next) {
+          setActiveChatUser({ id: OFFICE_ID, firstName: 'PDAO Office', lastName: '', role: 'User' } as UserProfile);
+        } else {
+          setActiveChatUser(null);
+        }
         return next;
       });
     }
@@ -332,59 +338,23 @@ const FloatingAssistiveButton: React.FC = () => {
           className="fixed inset-0 z-[220] flex items-center justify-center p-6 bg-alaga-navy/40 backdrop-blur-sm animate-in fade-in duration-200"
           role="dialog"
           aria-modal="true"
-          onClick={() => setIsOpen(false)}
+          onClick={() => { setIsOpen(false); setActiveChatUser(null); }}
         >
           <div
             className="w-full max-w-4xl h-[75vh] bg-white dark:bg-alaga-charcoal rounded-[24px] shadow-2xl overflow-hidden flex animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* LEFT: Contacts */}
-            <aside className="w-72 border-r border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-black/10 p-4 flex flex-col">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="font-black">Contacts</h4>
-              </div>
-
-              <div className="space-y-3">
-                <button
-                  onClick={() => setActiveChatUser({ id: OFFICE_ID, firstName: 'PDAO Office', lastName: '', role: 'User' } as UserProfile)}
-                  className={`w-full text-left p-3 rounded-lg flex items-center gap-3 transition-all ${activeChatUser?.id === OFFICE_ID ? 'bg-alaga-teal text-white' : 'hover:bg-white/50'}`}>
-                  <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-alaga-teal">
-                    <i className="fa-solid fa-building"></i>
-                  </div>
-                  <div>
-                    <p className="font-black">PDAO Office</p>
-                    <p className="text-xs opacity-60">Consolidated staff replies</p>
-                  </div>
-                </button>
-              </div>
-
-              <div className="mt-auto text-xs opacity-60">Office replies are consolidated and shown as &quot;PDAO Office&quot; to members.</div>
-            </aside>
-
-            {/* RIGHT: Messaging area */}
             <main className="flex-1 p-4">
-              {activeChatUser ? (
-                <div className="h-full flex flex-col">
-                  <div className="flex-1 overflow-hidden rounded-lg border border-gray-100 dark:border-white/5">
-                    <ChatWindow
-                      onClose={() => { setIsOpen(false); setActiveChatUser(null); }}
-                      onBackToList={() => setActiveChatUser(null)}
-                      targetUser={activeChatUser}
-                      isEmbedded={true}
-                      anchorPosition={position}
-                    />
-                  </div>
+              <div className="h-full flex flex-col">
+                <div className="flex-1 overflow-hidden rounded-lg border border-gray-100 dark:border-white/5">
+                  <ChatWindow
+                    onClose={() => { setIsOpen(false); setActiveChatUser(null); }}
+                    targetUser={(activeChatUser ?? { id: OFFICE_ID, firstName: 'PDAO Office', lastName: '', role: 'User' } as UserProfile)}
+                    isEmbedded={true}
+                    anchorPosition={position}
+                  />
                 </div>
-              ) : (
-                <div className="h-full flex items-center justify-center opacity-30 text-center px-10">
-                  <div>
-                    <div className="w-20 h-20 mx-auto rounded-full bg-alaga-blue/10 flex items-center justify-center mb-4">
-                      <i className="fa-solid fa-message text-2xl text-alaga-blue"></i>
-                    </div>
-                    <p className="font-black uppercase tracking-widest text-xs">Select a contact to message</p>
-                  </div>
-                </div>
-              )}
+              </div>
             </main>
           </div>
         </div>

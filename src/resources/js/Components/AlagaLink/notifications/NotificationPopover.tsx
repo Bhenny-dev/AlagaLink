@@ -7,7 +7,7 @@ import { useAppContext } from '@/Providers/AlagaLink/AppContext';
 interface NotificationPopoverProps {
   isOpen: boolean;
   onClose: () => void;
-  onNavigate: (page: string) => void;
+  onNavigate: (page: string, opts?: { force?: boolean }) => void;
 }
 
 const NotificationPopover: React.FC<NotificationPopoverProps> = ({ isOpen, onClose, onNavigate }) => {
@@ -31,7 +31,7 @@ const NotificationPopover: React.FC<NotificationPopoverProps> = ({ isOpen, onClo
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   return (
-    <div 
+    <div
       ref={popoverRef}
       className="absolute top-full right-0 mt-5 w-[400px] bg-white dark:bg-alaga-charcoal rounded-[32px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] border border-gray-100 dark:border-white/10 z-[300] animate-in fade-in zoom-in-95 slide-in-from-top-3 duration-300 origin-top-right overflow-hidden"
     >
@@ -49,7 +49,7 @@ const NotificationPopover: React.FC<NotificationPopoverProps> = ({ isOpen, onClo
               {unreadCount > 0 ? `You have ${unreadCount} new notifications` : 'Your registry is up to date'}
             </p>
           </div>
-          <button 
+          <button
             onClick={(e) => { e.stopPropagation(); clearAllNotifications(); }}
             className="text-[10px] font-black uppercase tracking-widest bg-white/20 hover:bg-white/30 backdrop-blur-md px-4 py-2 rounded-xl transition-all border border-white/10 text-white"
           >
@@ -69,7 +69,7 @@ const NotificationPopover: React.FC<NotificationPopoverProps> = ({ isOpen, onClo
         ) : (
           <div className="divide-y divide-gray-50 dark:divide-white/5">
             {notifications.map(notif => (
-              <div 
+              <div
                 key={notif.id}
                 onClick={() => {
                   markNotificationRead(notif.id);
@@ -83,7 +83,7 @@ const NotificationPopover: React.FC<NotificationPopoverProps> = ({ isOpen, onClo
                     if (section) {
                       setSearchSignal({ page, section, itemId });
                     }
-                    onNavigate(page);
+                    onNavigate(page, { force: true });
                     onClose();
                   }
                 }}
@@ -104,7 +104,7 @@ const NotificationPopover: React.FC<NotificationPopoverProps> = ({ isOpen, onClo
                     'fa-circle-info'
                   } text-lg`}></i>
                 </div>
-                
+
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
                     <p className={`text-xs font-black uppercase tracking-wider ${notif.isRead ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'}`}>
@@ -129,8 +129,8 @@ const NotificationPopover: React.FC<NotificationPopoverProps> = ({ isOpen, onClo
       </div>
 
       <footer className="p-4 border-t border-gray-100 dark:border-white/5 bg-gray-50/80 dark:bg-black/20 text-center">
-         <button 
-           onClick={() => { onNavigate('profile'); onClose(); }} 
+         <button
+           onClick={() => { onNavigate('profile', { force: true }); onClose(); }}
            className="text-[10px] font-black uppercase text-alaga-blue dark:text-blue-400 tracking-[0.2em] hover:opacity-70 transition-opacity flex items-center justify-center gap-2 mx-auto"
          >
            Access Detailed History
