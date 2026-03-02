@@ -15,7 +15,7 @@ interface HomeStatsProps {
   onNavigate: (page: string) => void;
 }
 
-const useCountUp = (target: number, durationMs = 800) => {
+const useCountUp = (target: number, depsKey: number, durationMs = 1400) => {
   const [value, setValue] = useState(0);
   const rafRef = useRef<number | null>(null);
 
@@ -36,6 +36,7 @@ const useCountUp = (target: number, durationMs = 800) => {
     const start = performance.now();
     const step = (now: number) => {
       const t = Math.min(1, (now - start) / durationMs);
+      // easeOutCubic (smooth start, gentle finish)
       const eased = 1 - Math.pow(1 - t, 3);
       const next = Math.round(eased * target);
       setValue(next);
@@ -46,16 +47,47 @@ const useCountUp = (target: number, durationMs = 800) => {
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [target, durationMs, shouldReduceMotion]);
+  }, [target, depsKey, durationMs, shouldReduceMotion]);
 
   return value;
 };
 
 const StatCard: React.FC<{ stat: Stat; onNavigate: (page: string) => void }> = ({ stat, onNavigate }) => {
-  const displayValue = useCountUp(stat.value);
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const [playKey, setPlayKey] = useState(0);
+  const wasIntersectingRef = useRef(false);
+
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el) return;
+
+    if (typeof window === 'undefined' || !('IntersectionObserver' in window)) {
+      setPlayKey(k => k + 1);
+      return;
+    }
+
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        const isIntersecting = !!entry?.isIntersecting;
+        if (isIntersecting && !wasIntersectingRef.current) {
+          // Replay every time the card scrolls into view.
+          setPlayKey(k => k + 1);
+        }
+        wasIntersectingRef.current = isIntersecting;
+      },
+      { threshold: 0.35 }
+    );
+
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  const displayValue = useCountUp(stat.value, playKey, 1400);
 
   return (
     <div
+      ref={cardRef}
       onClick={() => onNavigate(stat.link)}
       className="inflated-card bg-white dark:bg-alaga-charcoal p-5 md:p-8 rounded-[20px] md:rounded-[32px] cursor-pointer group border border-gray-100 dark:border-white/5 relative overflow-hidden active:scale-95"
     >

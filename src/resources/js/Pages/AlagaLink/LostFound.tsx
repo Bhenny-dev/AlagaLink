@@ -12,8 +12,13 @@ import ReportMissingWizard from '@/Components/AlagaLink/lost-found/ReportMissing
 const LostFound: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) => {
   const { reports, globalSearchQuery, searchSignal, setSearchSignal, addReport, currentUser } = useAppContext();
   const [filter, setFilter] = useState<'All' | 'Missing' | 'Found'>('Missing');
-  const [selectedReport, setSelectedReport] = useState<LostReport | null>(null);
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
+
+  const selectedReport = useMemo(() => {
+    if (!selectedReportId) return null;
+    return reports.find(r => r.id === selectedReportId) ?? null;
+  }, [reports, selectedReportId]);
 
   // Updated to include SuperAdmin
   const isAdmin = currentUser?.role === 'Admin' || currentUser?.role === 'SuperAdmin';
@@ -29,15 +34,18 @@ const LostFound: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigat
           } else {
             setFilter('All');
           }
-          setSelectedReport(targetReport);
+          setSelectedReportId(targetReport.id);
         });
       }
+
+      // Clear the signal after handling to avoid re-opening on future navigations.
+      setSearchSignal(null);
     }
-  }, [searchSignal, reports]);
+  }, [searchSignal, reports, setSearchSignal]);
 
   const filteredReports = useMemo(() => {
     return reports.filter(r => {
-      const matchesSearch = r.name.toLowerCase().includes(globalSearchQuery.toLowerCase()) || 
+      const matchesSearch = r.name.toLowerCase().includes(globalSearchQuery.toLowerCase()) ||
                             r.lastSeen.toLowerCase().includes(globalSearchQuery.toLowerCase());
       const matchesFilter = filter === 'All' || r.status === filter;
       return matchesSearch && matchesFilter;
@@ -45,7 +53,7 @@ const LostFound: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigat
   }, [reports, filter, globalSearchQuery]);
 
   const closeDetail = () => {
-    setSelectedReport(null);
+    setSelectedReportId(null);
     setSearchSignal(null);
   };
 
@@ -59,30 +67,30 @@ const LostFound: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigat
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-screen">
-      <LostFoundHeader 
-        filter={filter} 
-        onSetFilter={setFilter} 
+      <LostFoundHeader
+        filter={filter}
+        onSetFilter={setFilter}
         onOpenReportModal={() => setIsWizardOpen(true)}
         isAdmin={isAdmin}
       />
-      
-      <LostFoundGrid 
-        reports={filteredReports} 
-        onSelect={setSelectedReport} 
+
+      <LostFoundGrid
+        reports={filteredReports}
+        onSelect={(r) => setSelectedReportId(r.id)}
       />
-      
+
       {/* Case Detail */}
       {selectedReport && (
-        <CaseDetailModal 
-          report={selectedReport} 
-          onClose={closeDetail} 
+        <CaseDetailModal
+          report={selectedReport}
+          onClose={closeDetail}
         />
       )}
 
       {/* Multi-Step Report Missing Wizard - Only accessible if Admin/SuperAdmin is triggered */}
       {isWizardOpen && isAdmin && (
-        <ReportMissingWizard 
-          onClose={() => setIsWizardOpen(false)} 
+        <ReportMissingWizard
+          onClose={() => setIsWizardOpen(false)}
           onNavigate={onNavigate}
           onSubmit={handleReportSubmit}
         />

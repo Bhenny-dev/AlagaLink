@@ -41,6 +41,7 @@ Route::middleware('auth')->prefix('api')->group(function () {
     Route::patch('/alagalink/users/{alagalinkId}', [UserProfileController::class, 'update']);
 
     Route::post('/alagalink/reports', [LostReportController::class, 'store']);
+    Route::patch('/alagalink/reports/{id}', [LostReportController::class, 'update']);
 
     Route::post('/alagalink/program-availments', [ProgramAvailmentController::class, 'store']);
     Route::patch('/alagalink/program-availments/{id}', [ProgramAvailmentController::class, 'update']);

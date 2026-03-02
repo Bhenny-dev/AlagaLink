@@ -70,6 +70,7 @@ interface AppContextType {
   loginById: (id: string) => void;
   logout: () => void;
   addReport: (report: LostReport) => void;
+  updateReport: (report: LostReport) => void;
   addUser: (user: UserProfile) => void;
   updateUser: (user: UserProfile) => void;
   updateProgramRequest: (updatedReq: ProgramAvailment) => void;
@@ -246,6 +247,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialLaravelUs
       })
       .catch((e) => {
         console.error('Failed to persist lost report:', e);
+      });
+  };
+
+  const updateReport = (updatedReport: LostReport) => {
+    setReports(prev => prev.map(r => (r.id === updatedReport.id ? updatedReport : r)));
+
+    axios.patch('/api/alagalink/reports/' + encodeURIComponent(updatedReport.id), updatedReport)
+      .then((response) => {
+        const saved = response?.data?.report as LostReport | undefined;
+        if (!saved?.id) return;
+        setReports(prev => prev.map(r => (r.id === saved.id ? saved : r)));
+      })
+      .catch((e) => {
+        console.error('Failed to persist lost report update:', e);
       });
   };
 
@@ -506,7 +521,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialLaravelUs
       customSections,
       directMessages, isDarkMode, globalSearchQuery, globalSearchFilter, searchSignal,
       setGlobalSearchQuery, setGlobalSearchFilter, setSearchSignal, toggleTheme,
-      login, loginWithPassword, loginById, logout, addReport, addUser, updateUser, updateProgramRequest, addProgramRequest,
+      login, loginWithPassword, loginById, logout, addReport, updateReport, addUser, updateUser, updateProgramRequest, addProgramRequest,
       addCustomSection, removeCustomSection, markNotificationRead, clearAllNotifications,
       sendDirectMessage,
       loadDirectThread

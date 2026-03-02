@@ -115,4 +115,65 @@ class LostReportController extends Controller
             'notifications' => $actorNotification ? [$actorNotification] : [],
         ]);
     }
+
+    public function update(Request $request, string $id): JsonResponse
+    {
+        $actor = $request->user();
+        if (! $actor) {
+            throw ValidationException::withMessages([
+                'auth' => ['Unauthenticated.'],
+            ]);
+        }
+
+        $actorRole = (string) ($actor->alagalink_role ?? 'User');
+        $isAdmin = in_array($actorRole, ['Admin', 'SuperAdmin'], true);
+        if (! $isAdmin) {
+            throw ValidationException::withMessages([
+                'auth' => ['Forbidden.'],
+            ]);
+        }
+
+        $report = AlagaLinkLostReport::query()->where('id', $id)->first();
+        if (! $report) {
+            throw ValidationException::withMessages([
+                'id' => ['Report not found.'],
+            ]);
+        }
+
+        $data = $request->validate([
+            'userId' => ['sometimes', 'string', 'max:128'],
+            'name' => ['sometimes', 'string', 'max:255'],
+            'reporterId' => ['sometimes', 'string', 'max:128'],
+            'timeMissing' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'lastSeen' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'description' => ['sometimes', 'nullable', 'string', 'max:2000'],
+            'clothes' => ['sometimes', 'nullable', 'string', 'max:1000'],
+            'height' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'bodyType' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'dissemination' => ['sometimes', 'nullable', 'array'],
+            'status' => ['sometimes', Rule::in(['Missing', 'Found', 'Pending'])],
+            'isPosted' => ['sometimes', 'boolean'],
+            'missingNarrative' => ['sometimes', 'nullable', 'array'],
+            'foundNarrative' => ['sometimes', 'nullable', 'array'],
+            'photoUrl' => ['sometimes', 'nullable', 'string', 'max:2048'],
+        ]);
+
+        $payload = is_array($report->data) ? $report->data : (array) $report->data;
+        $payload['id'] = (string) $report->id;
+
+        foreach ($data as $k => $v) {
+            $payload[$k] = $v;
+        }
+
+        $report->user_id = (string) ($payload['userId'] ?? $report->user_id);
+        $report->reporter_id = (string) ($payload['reporterId'] ?? $report->reporter_id);
+        $report->status = (string) ($payload['status'] ?? $report->status);
+        $report->is_posted = (bool) ($payload['isPosted'] ?? $report->is_posted);
+        $report->data = $payload;
+        $report->save();
+
+        return response()->json([
+            'report' => $payload,
+        ]);
+    }
 }

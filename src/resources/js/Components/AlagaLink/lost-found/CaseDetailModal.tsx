@@ -11,8 +11,8 @@ interface CaseDetailModalProps {
 }
 
 const CaseDetailModal: React.FC<CaseDetailModalProps> = ({ report, onClose }) => {
-  const { currentUser, users } = useAppContext();
-  
+  const { currentUser, users, updateReport } = useAppContext();
+
   // Find the linked user profile
   const subjectUser = users.find(u => u.id === report.userId);
   const isFound = report.status === 'Found';
@@ -20,8 +20,10 @@ const CaseDetailModal: React.FC<CaseDetailModalProps> = ({ report, onClose }) =>
   const handleMarkFound = () => {
     // In a real app, this would open a narrative form
     if (confirm(`Confirm ${report.name} has been found? This will move the case to 'Found' status.`)) {
-      alert(`${report.name} marked as found. Resolution logged.`);
-      onClose();
+      updateReport({
+        ...report,
+        status: 'Found',
+      });
     }
   };
 
@@ -30,7 +32,7 @@ const CaseDetailModal: React.FC<CaseDetailModalProps> = ({ report, onClose }) =>
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-0 md:p-10 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
       <div className="bg-white dark:bg-alaga-charcoal w-full h-full md:max-w-4xl md:h-[85vh] md:rounded-[32px] shadow-2xl relative flex flex-col md:flex-row animate-in zoom-in-95 duration-300 overflow-hidden">
-        
+
         {/* Left Side: Photo & Quick Status */}
         <div className="md:w-5/12 relative h-64 md:h-auto shrink-0 group">
           <Image
@@ -40,10 +42,10 @@ const CaseDetailModal: React.FC<CaseDetailModalProps> = ({ report, onClose }) =>
             className="object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-          
+
           {/* Improved Visibility Back Button */}
-          <button 
-            onClick={onClose} 
+          <button
+            onClick={onClose}
             className="absolute top-6 left-6 w-12 h-12 flex items-center justify-center rounded-full bg-alaga-blue text-white shadow-[0_10px_30px_rgba(37,70,240,0.5)] border-2 border-white/20 hover:scale-110 active:scale-95 hover:bg-blue-600 transition-all z-20"
             aria-label="Return to list"
           >
@@ -65,14 +67,14 @@ const CaseDetailModal: React.FC<CaseDetailModalProps> = ({ report, onClose }) =>
         {/* Right Side: Scrollable Details */}
         <div className="md:w-7/12 flex-1 flex flex-col bg-white dark:bg-alaga-charcoal overflow-y-auto no-scrollbar">
           <div className="p-8 md:p-10 space-y-10">
-            
+
             {/* 1. Incident Details */}
             <section className="space-y-6">
               <div className="flex items-center gap-3 text-red-500">
                 <i className="fa-solid fa-person-circle-exclamation text-xl"></i>
                 <h4 className="text-[10px] font-black uppercase tracking-[0.2em]">Active Incident Profile</h4>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 {[
                   { label: 'Last Seen At', value: report.lastSeen, icon: 'fa-location-crosshairs' },
@@ -262,7 +264,7 @@ const CaseDetailModal: React.FC<CaseDetailModalProps> = ({ report, onClose }) =>
                       <i className="fa-solid fa-share-nodes"></i> Share Public Alert
                    </button>
                    {canManageCase && (
-                     <button 
+                     <button
                         onClick={handleMarkFound}
                         className="flex-1 bg-alaga-teal text-white py-4 rounded-2xl font-black text-sm shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
                       >

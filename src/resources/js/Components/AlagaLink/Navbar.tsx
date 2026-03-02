@@ -121,18 +121,6 @@ const Navbar: React.FC<{ onNavigate: (page: string) => void, currentPage: string
           itemId: u.id,
         });
       });
-    } else if (currentUser) {
-      // Regular user: quick link to own profile
-      const hay = `${currentUser.firstName} ${currentUser.lastName} ${currentUser.id} profile`.toLowerCase();
-      if (hay.includes(q) || q.includes('profile') || q.includes('me')) {
-        pushUnique({
-          id: `me:${currentUser.id}`,
-          title: 'My Identity Profile',
-          subtitle: currentUser.id,
-          icon: 'fa-id-badge',
-          page: 'profile',
-        });
-      }
     }
 
     // Lost & Found reports
@@ -149,24 +137,27 @@ const Navbar: React.FC<{ onNavigate: (page: string) => void, currentPage: string
       });
     });
 
-    // Program requests
-    programRequests.forEach(req => {
-      if (!isAdmin && currentUser && req.userId !== currentUser.id) return;
-      const user = users.find(u => u.id === req.userId);
-      const who = user ? `${user.firstName} ${user.lastName}` : req.userId;
-      const hay = `${req.title} ${req.id} ${req.programType} ${req.status} ${who}`.toLowerCase();
-      if (!hay.includes(q)) return;
-
+    // Program portals (static entries)
+    if (q.includes('id') || q.includes('pwd') || q.includes('card') || q.includes('registry')) {
       pushUnique({
-        id: `req:${req.id}`,
-        title: req.title,
-        subtitle: `Request • ${req.programType} • ${req.status}`,
-        icon: 'fa-file-signature',
+        id: 'portal:id',
+        title: 'Municipal ID Registry',
+        subtitle: 'Programs • ID Issuance',
+        icon: 'fa-id-card',
         page: 'programs',
-        section: isAdmin ? 'requests' : req.programType,
-        itemId: req.id,
+        section: 'ID',
       });
-    });
+    }
+    if (q.includes('phil') || q.includes('health') || q.includes('insurance')) {
+      pushUnique({
+        id: 'portal:philhealth',
+        title: 'PhilHealth Assistance',
+        subtitle: 'Programs • Sponsored Enrollment',
+        icon: 'fa-shield-halved',
+        page: 'programs',
+        section: 'PhilHealth',
+      });
+    }
 
     // Programs/Services inventory
     devices.forEach(d => {
@@ -209,22 +200,8 @@ const Navbar: React.FC<{ onNavigate: (page: string) => void, currentPage: string
       });
     });
 
-    // Updates/news
-    updates.forEach(upd => {
-      const hay = `${upd.title} ${upd.summary} ${upd.detail}`.toLowerCase();
-      if (!hay.includes(q)) return;
-      pushUnique({
-        id: `news:${upd.id}`,
-        title: upd.title,
-        subtitle: 'Home • Update',
-        icon: 'fa-newspaper',
-        page: 'home',
-        itemId: `news-${upd.id}`,
-      });
-    });
-
-    return results.slice(0, 10);
-  }, [globalSearchQuery, isAdmin, currentUser, users, reports, programRequests, devices, medicalServices, livelihoodPrograms, updates]);
+    return results.slice(0, 25);
+  }, [globalSearchQuery, isAdmin, currentUser, users, reports, devices, medicalServices, livelihoodPrograms]);
 
   const handleResultClick = (res: SearchResult) => {
     if (res.section || res.itemId) {
@@ -232,7 +209,9 @@ const Navbar: React.FC<{ onNavigate: (page: string) => void, currentPage: string
     }
     setGlobalSearchQuery('');
     setIsSearchOpen(false);
-    handleNavigate(res.page, { force: true });
+    if (currentPage !== res.page) {
+      handleNavigate(res.page, { force: true });
+    }
   };
 
   return (
@@ -269,7 +248,7 @@ const Navbar: React.FC<{ onNavigate: (page: string) => void, currentPage: string
                   if (first) handleResultClick(first);
                 }
               }}
-              placeholder="Search members, reports, requests, programs..."
+              placeholder="Search users, programs/services, lost & found..."
               className="w-full pl-11 pr-4 py-3 rounded-[18px] bg-white/10 hover:bg-white/15 focus:bg-white/15 outline-none border border-white/20 text-xs font-black uppercase tracking-widest placeholder:text-white/50 transition-all"
               aria-label="Global search"
             />
@@ -284,7 +263,7 @@ const Navbar: React.FC<{ onNavigate: (page: string) => void, currentPage: string
               {universalResults.length === 0 ? (
                 <div className="p-6 text-xs font-black uppercase tracking-widest opacity-40">No matches found</div>
               ) : (
-                <div className="divide-y divide-gray-50 dark:divide-white/5">
+                <div className="divide-y divide-gray-50 dark:divide-white/5 max-h-[420px] overflow-y-auto">
                   {universalResults.map((res) => (
                     <button
                       key={res.id}

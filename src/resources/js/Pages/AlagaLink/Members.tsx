@@ -69,6 +69,9 @@ const Members: React.FC = () => {
           }
         });
       }
+
+      // Clear after handling so the next redirect always wins.
+      setSearchSignal(null);
     }
   }, [searchSignal, users, isSuperAdmin, setSearchSignal]);
 
