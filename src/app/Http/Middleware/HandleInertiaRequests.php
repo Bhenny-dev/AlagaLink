@@ -133,15 +133,23 @@ class HandleInertiaRequests extends Middleware
                 $actorRole = (string) ($actor?->alagalink_role ?? 'User');
                 $actorId = (string) ($actor?->alagalink_id ?? '');
 
+                $visibleTargetRoles = match ($actorRole) {
+                    // SuperAdmin should see Admin-targeted notifications too.
+                    'SuperAdmin' => ['SuperAdmin', 'Admin'],
+                    'Admin' => ['Admin'],
+                    'User' => ['User'],
+                    default => [$actorRole],
+                };
+
                 $notifQuery = AlagaLinkNotification::query();
 
                 if ($actorId !== '') {
-                    $notifQuery->where(function ($q) use ($actorId, $actorRole) {
+                    $notifQuery->where(function ($q) use ($actorId, $visibleTargetRoles) {
                         $q->where('user_id', $actorId)
-                            ->orWhere('target_role', $actorRole);
+                            ->orWhereIn('target_role', $visibleTargetRoles);
                     });
                 } else {
-                    $notifQuery->where('target_role', $actorRole);
+                    $notifQuery->whereIn('target_role', $visibleTargetRoles);
                 }
 
                 $notifications = $notifQuery

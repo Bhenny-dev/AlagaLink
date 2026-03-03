@@ -9,7 +9,7 @@ interface NotificationDrawerProps {
 }
 
 const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ isOpen, onClose, onNavigate }) => {
-  const { notifications, markNotificationRead, clearAllNotifications } = useAppContext();
+  const { notifications, markNotificationRead, clearAllNotifications, setSearchSignal } = useAppContext();
 
   if (!isOpen) return null;
 
@@ -18,11 +18,11 @@ const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ isOpen, onClose
   return (
     <div className="fixed inset-0 z-[250] flex justify-end">
       {/* Backdrop */}
-      <div 
+      <div
         className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-500"
         onClick={onClose}
       />
-      
+
       {/* Drawer */}
       <div className="relative w-full max-w-md bg-white dark:bg-alaga-charcoal h-full shadow-[0_0_80px_rgba(0,0,0,0.5)] flex flex-col animate-in slide-in-from-right duration-500">
         <header className="p-10 border-b border-gray-100 dark:border-white/5 flex items-center justify-between bg-alaga-blue text-white shrink-0 relative overflow-hidden">
@@ -54,18 +54,26 @@ const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ isOpen, onClose
           ) : (
             <div className="space-y-4">
               {notifications.map(notif => (
-                <div 
+                <div
                   key={notif.id}
                   onClick={() => {
                     markNotificationRead(notif.id);
                     if (notif.link) {
-                      onNavigate(notif.link);
+                      // Support structured links of the form "page:section:itemId"
+                      const parts = notif.link.split(':');
+                      const page = parts[0] || notif.link;
+                      const section = parts[1];
+                      const itemId = parts[2];
+                      if (section) {
+                        setSearchSignal({ page, section, itemId });
+                      }
+                      onNavigate(page);
                       onClose();
                     }
                   }}
                   className={`p-7 rounded-[28px] border-2 transition-all cursor-pointer relative group ${
-                    notif.isRead 
-                      ? 'bg-white dark:bg-alaga-charcoal border-gray-50 dark:border-white/5' 
+                    notif.isRead
+                      ? 'bg-white dark:bg-alaga-charcoal border-gray-50 dark:border-white/5'
                       : 'bg-alaga-blue/5 dark:bg-alaga-blue/10 border-alaga-blue/20 shadow-xl shadow-alaga-blue/5'
                   } hover:scale-[1.02] active:scale-95`}
                 >
@@ -83,7 +91,7 @@ const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ isOpen, onClose
                         'fa-circle-info'
                       } text-xl`}></i>
                     </div>
-                    
+
                     <div className="flex-1 min-w-0 space-y-2">
                       <div className="flex items-center justify-between">
                         <p className={`text-xs font-black uppercase tracking-[0.15em] ${notif.isRead ? 'opacity-40' : 'text-alaga-blue dark:text-alaga-blue'}`}>
@@ -111,7 +119,7 @@ const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ isOpen, onClose
         </div>
 
         <footer className="p-10 border-t border-gray-100 dark:border-white/5 shrink-0 bg-alaga-gray dark:bg-alaga-navy/20">
-          <button 
+          <button
             onClick={clearAllNotifications}
             className="w-full py-5 bg-alaga-blue text-white rounded-[24px] text-xs font-black uppercase tracking-[0.2em] shadow-2xl shadow-alaga-blue/30 hover:scale-[1.02] active:scale-95 transition-all"
           >

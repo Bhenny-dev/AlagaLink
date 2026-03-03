@@ -22,6 +22,13 @@ class NotificationController extends Controller
         $actorId = (string) ($actor->alagalink_id ?? '');
         $actorRole = (string) ($actor->alagalink_role ?? 'User');
 
+        $visibleTargetRoles = match ($actorRole) {
+            'SuperAdmin' => ['SuperAdmin', 'Admin'],
+            'Admin' => ['Admin'],
+            'User' => ['User'],
+            default => [$actorRole],
+        };
+
         $notif = AlagaLinkNotification::query()->where('id', $id)->first();
         if (! $notif) {
             throw ValidationException::withMessages([
@@ -30,7 +37,7 @@ class NotificationController extends Controller
         }
 
         $belongsToActor = $notif->user_id !== null && (string) $notif->user_id === $actorId;
-        $roleMatches = $notif->target_role !== null && (string) $notif->target_role === $actorRole;
+        $roleMatches = $notif->target_role !== null && in_array((string) $notif->target_role, $visibleTargetRoles, true);
 
         // Admins/SuperAdmins should still only be able to mark notifications visible to them.
         if (! $belongsToActor && ! $roleMatches) {
@@ -64,15 +71,22 @@ class NotificationController extends Controller
         $actorId = (string) ($actor->alagalink_id ?? '');
         $actorRole = (string) ($actor->alagalink_role ?? 'User');
 
+        $visibleTargetRoles = match ($actorRole) {
+            'SuperAdmin' => ['SuperAdmin', 'Admin'],
+            'Admin' => ['Admin'],
+            'User' => ['User'],
+            default => [$actorRole],
+        };
+
         $query = AlagaLinkNotification::query();
 
         if ($actorId !== '') {
-            $query->where(function ($q) use ($actorId, $actorRole) {
+            $query->where(function ($q) use ($actorId, $visibleTargetRoles) {
                 $q->where('user_id', $actorId)
-                    ->orWhere('target_role', $actorRole);
+                    ->orWhereIn('target_role', $visibleTargetRoles);
             });
         } else {
-            $query->where('target_role', $actorRole);
+            $query->whereIn('target_role', $visibleTargetRoles);
         }
 
         $notifs = $query->get();

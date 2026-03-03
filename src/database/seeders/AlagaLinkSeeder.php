@@ -445,25 +445,71 @@ class AlagaLinkSeeder extends Seeder
             $faker = fake();
             $types = ['Info', 'Success', 'Warning', 'Urgent'];
 
+            $staffRoles = ['Admin', 'SuperAdmin'];
+            $userProgramTypes = ['ID', 'Device', 'Medical', 'PhilHealth', 'Livelihood'];
+
             for ($i = 0; $i < 18; $i++) {
                 $id = 'notif-'.Str::ulid();
                 $targetUser = $faker->boolean(60);
                 $userId = $targetUser ? $pickUserId() : null;
-                $targetRole = $targetUser ? null : $faker->randomElement(['User', 'Admin', 'SuperAdmin']);
+                $targetRole = $targetUser ? null : $faker->randomElement(['User', ...$staffRoles]);
                 $type = $faker->randomElement($types);
                 $date = Carbon::now()->subDays($faker->numberBetween(0, 45));
+
+                $programType = $faker->randomElement($userProgramTypes);
+
+                // Seed notifications should be actionable so the UI feels “real”.
+                // Use existing deep link conventions: "page:section:itemId" or "page:section".
+                $link = null;
+                $title = '';
+                $message = '';
+
+                if ($userId !== null) {
+                    // Member-facing examples.
+                    $title = $faker->randomElement([
+                        'Application Update',
+                        'Request Logged',
+                        'Registry Reminder',
+                    ]);
+
+                    if ($title === 'Application Update') {
+                        $message = "Your {$programType} application has an update. Review your program portal for details.";
+                        $link = "programs:{$programType}";
+                    } elseif ($title === 'Request Logged') {
+                        $message = "We received your {$programType} request. It is now queued for evaluation.";
+                        $link = "programs:{$programType}";
+                    } else {
+                        $message = 'Please keep your profile information up to date to avoid processing delays.';
+                        $link = 'profile';
+                    }
+                } else {
+                    // Role-facing examples.
+                    if ($targetRole === 'Admin') {
+                        $title = $faker->randomElement(['New Evaluation Pending', 'Queue Alert']);
+                        $message = "A new {$programType} request requires review. Open Programs to evaluate.";
+                        $link = 'programs';
+                    } elseif ($targetRole === 'SuperAdmin') {
+                        $title = $faker->randomElement(['Staff Oversight', 'System Notice']);
+                        $message = 'A staff-level action may need your attention. Review Members to proceed.';
+                        $link = 'members:Staff';
+                    } else {
+                        $title = $faker->randomElement(['Community Update', 'Registry Notice']);
+                        $message = "New updates are available in your Programs portal.";
+                        $link = "programs:{$programType}";
+                    }
+                }
 
                 $payload = [
                     'id' => $id,
                     'userId' => $userId,
                     'targetRole' => $targetRole,
-                    'title' => $faker->sentence(4),
-                    'message' => $faker->sentence(14),
+                    'title' => $title,
+                    'message' => $message,
                     'type' => $type,
                     'date' => $date->toISOString(),
                     'isRead' => (bool) $faker->boolean(30),
-                    'link' => null,
-                    'programType' => $faker->boolean(35) ? $faker->randomElement(['ID', 'Device', 'Medical', 'PhilHealth', 'Livelihood']) : null,
+                    'link' => $link,
+                    'programType' => $faker->boolean(60) ? $programType : null,
                 ];
 
                 AlagaLinkNotification::query()->create([
@@ -475,7 +521,7 @@ class AlagaLinkSeeder extends Seeder
                     'type' => $type,
                     'date' => $date,
                     'is_read' => (bool) $payload['isRead'],
-                    'link' => null,
+                    'link' => $link,
                     'program_type' => $payload['programType'],
                     'data' => $payload,
                 ]);
