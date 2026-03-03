@@ -5,15 +5,18 @@ import LandingPageRestored from '@/Components/AlagaLink/home/LandingPageRestored
 
 export default function Welcome({ auth }) {
     const isLoggedIn = !!auth?.user;
+    const role = auth?.user?.role || auth?.user?.alagalink_role;
+    const isAdmin = role === 'Admin' || role === 'SuperAdmin';
 
     const section = new URLSearchParams(window.location.search).get('section');
 
     useEffect(() => {
         if (!isLoggedIn) return;
+        if (isAdmin) return;
         router.visit(route('dashboard', {}, false));
-    }, [isLoggedIn]);
+    }, [isLoggedIn, isAdmin]);
 
-    if (isLoggedIn) {
+    if (isLoggedIn && !isAdmin) {
         return (
             <>
                 <Head title="Redirecting" />

@@ -250,7 +250,7 @@ const Home: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) 
   };
 
   if (!currentUser) {
-    return <LandingPage />;
+    return <LandingPage allowAdminRegistration={false} />;
   }
 
   const handleUpdateClick = (update: UpdateItem) => {

@@ -33,7 +33,15 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false))->setStatusCode(303);
+        $user = $request->user();
+        $role = $user?->alagalink_role;
+        $isAdmin = $role === 'Admin' || $role === 'SuperAdmin';
+
+        $defaultRedirect = $isAdmin
+            ? '/?section=admin-register'
+            : route('dashboard', absolute: false);
+
+        return redirect()->intended($defaultRedirect)->setStatusCode(303);
     }
 
     /**
