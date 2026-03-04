@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["DOM", "DOM.Iterable", "ES2020"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "allowJs": true,
+    "checkJs": false,
+    "isolatedModules": true,
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["resources/js/*"],
+      "next/image": ["resources/js/Providers/AlagaLink/next-image.tsx"],
+      "ziggy-js": ["./vendor/tightenco/ziggy"]
+    },
+    "types": ["vite/client"],
+    "skipLibCheck": true
+  },
+  "include": ["resources/js/**/*", "vite.config.js"],
+  "exclude": ["node_modules", "public", "vendor"]
+}

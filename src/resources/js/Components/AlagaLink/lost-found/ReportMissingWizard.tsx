@@ -128,7 +128,7 @@ const ReportMissingWizard: React.FC<ReportMissingWizardProps> = ({ onClose, onNa
                                  <div className="w-12 h-12 rounded-2xl bg-gray-100 border-2 border-white shadow-sm" />
                                )}
                                <div>
-                                  <p className="font-black text-sm">{u.firstName} {u.lastName}</p>
+                                 <p className="font-black text-sm text-gray-900 dark:text-white">{u.firstName} {u.lastName}</p>
                                   <p className="text-[9px] font-mono opacity-40 uppercase">{u.id}</p>
                                </div>
                             </div>

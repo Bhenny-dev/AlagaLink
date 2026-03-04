@@ -409,26 +409,26 @@ const Programs: React.FC = () => {
             </div>
 
             {idSearchQuery && (
-              <div className="bg-white dark:bg-alaga-charcoal rounded-[32px] p-6 shadow-2xl border border-gray-100 dark:border-white/10 animate-in slide-in-from-top-4 duration-300 inflated-card">
-                <h5 className="px-8 py-4 text-[10px] font-black uppercase opacity-40 tracking-[0.2em] border-b border-gray-100 dark:border-white/5 mb-4">Registry Matches</h5>
+              <div className="bg-white dark:bg-alaga-charcoal rounded-[24px] p-4 shadow-xl border border-gray-100 dark:border-white/10 animate-in slide-in-from-top-3 duration-200">
+                <h5 className="px-5 py-3 text-[10px] font-black uppercase opacity-40 tracking-[0.2em] border-b border-gray-100 dark:border-white/5 mb-3">Registry Matches</h5>
                 {idSearchResults.length > 0 ? (
                   <div className="space-y-3">
                     {idSearchResults.map(u => (
-                      <div key={u.id} className="flex items-center justify-between p-6 hover:bg-alaga-blue/5 rounded-3xl transition-all group border border-transparent hover:border-alaga-blue/20">
-                        <div className="flex items-center gap-6">
+                      <div key={u.id} className="flex items-center justify-between p-4 hover:bg-alaga-blue/5 rounded-2xl transition-colors duration-150 group border border-transparent hover:border-alaga-blue/10">
+                        <div className="flex items-center gap-4">
                           {u.photoUrl ? (
-                            <Image src={u.photoUrl} width={64} height={64} className="w-16 h-16 rounded-2xl object-cover shadow-lg group-hover:scale-105 transition-transform" alt={`${u.firstName} ${u.lastName}`} />
+                            <Image src={u.photoUrl} width={48} height={48} className="w-12 h-12 rounded-xl object-cover shadow-md" alt={`${u.firstName} ${u.lastName}`} />
                           ) : (
-                            <div className="w-16 h-16 rounded-2xl bg-gray-100" />
+                            <div className="w-12 h-12 rounded-xl bg-gray-100" />
                           )}
                           <div>
-                            <p className="font-black text-lg text-3d">{u.firstName} {u.lastName}</p>
-                            <p className="text-[11px] opacity-40 font-mono tracking-tighter uppercase">{u.id} • {u.address}</p>
+                            <p className="font-black text-base leading-tight">{u.firstName} {u.lastName}</p>
+                            <p className="text-[10px] opacity-40 font-mono tracking-tighter uppercase">{u.id} • {u.address}</p>
                           </div>
                         </div>
                         <button
                           onClick={() => handleApply('ID', 'ID Issuance Request', undefined, u.id)}
-                          className="bg-alaga-blue text-white px-8 py-3 rounded-2xl text-xs font-black shadow-xl shadow-alaga-blue/20 opacity-0 group-hover:opacity-100 transition-all hover:scale-105"
+                          className="bg-alaga-blue text-white px-5 py-2 rounded-xl text-[11px] font-black shadow-md shadow-alaga-blue/20 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
                         >
                           Process ID
                         </button>
@@ -487,21 +487,21 @@ const Programs: React.FC = () => {
                         <div
                             key={req.id}
                             onClick={() => setSelectedRequest(req)}
-                            className="p-8 bg-white dark:bg-alaga-navy/20 rounded-[32px] border border-gray-100 dark:border-white/5 flex items-center justify-between group transition-all cursor-pointer inflated-card border-transparent hover:border-alaga-blue"
+                            className="p-5 bg-white dark:bg-alaga-navy/20 rounded-[24px] border border-gray-100 dark:border-white/5 flex items-center justify-between cursor-pointer inflated-card border-transparent hover:border-alaga-blue/30 transition-colors duration-150"
                         >
-                            <div className="flex items-center gap-6">
+                            <div className="flex items-center gap-4">
                                 {user?.photoUrl ? (
-                                  <Image src={user.photoUrl} width={64} height={64} className="w-16 h-16 rounded-2xl object-cover shadow-xl" alt={`${user?.firstName} ${user?.lastName}`} />
+                                  <Image src={user.photoUrl} width={48} height={48} className="w-12 h-12 rounded-xl object-cover shadow-md" alt={`${user?.firstName} ${user?.lastName}`} />
                                 ) : (
-                                  <div className="w-16 h-16 rounded-2xl bg-gray-100" />
+                                  <div className="w-12 h-12 rounded-xl bg-gray-100" />
                                 )}
                                 <div>
-                                    <p className="font-black text-lg text-3d">{user?.firstName} {user?.lastName}</p>
+                                    <p className="font-black text-base leading-tight">{user?.firstName} {user?.lastName}</p>
                                     <p className="text-[10px] opacity-40 uppercase font-black tracking-[0.2em]">{req.dateApplied} • {req.id}</p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-8">
-                                <span className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl inner-glow ${
+                            <div className="flex items-center gap-5">
+                                <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-md inner-glow ${
                                   req.status === 'Completed' || req.status === 'Approved' || req.status === 'Claimed' ? 'bg-alaga-teal text-white' :
                                     req.status === 'Pending' ? 'bg-alaga-gold text-alaga-navy' :
                                     req.status === 'Rejected' ? 'bg-red-500 text-white' :
@@ -516,7 +516,7 @@ const Programs: React.FC = () => {
                                   if (reqUnread === 1) return <span className="w-3 h-3 bg-red-500 rounded-full shadow-md" />;
                                   return <span className="inline-flex items-center justify-center bg-red-500 text-white text-[10px] font-black rounded-full w-6 h-6">{reqUnread}</span>;
                                 })()}
-                                <i className="fa-solid fa-chevron-right opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all"></i>
+                                <i className="fa-solid fa-chevron-right opacity-30"></i>
                             </div>
                         </div>
                     );
@@ -848,7 +848,7 @@ const Programs: React.FC = () => {
       {/* Admin Evaluation Modal */}
       {selectedRequest && (
         <div className="fixed inset-0 z-[200] flex items-start justify-center p-0 md:p-10 bg-black/80 backdrop-blur-md alagalink-overlay-scroll alagalink-topbar-safe">
-           <div className="bg-white dark:bg-alaga-charcoal w-full h-full md:rounded-[48px] overflow-hidden relative shadow-[0_40px_100px_rgba(0,0,0,0.6)] border border-white/10 inflated-card">
+           <div className="bg-white dark:bg-alaga-charcoal w-full h-full md:rounded-[48px] overflow-hidden relative shadow-[0_40px_100px_rgba(0,0,0,0.6)] border border-white/10">
               <button onClick={closeModal} className="absolute top-8 right-8 w-12 h-12 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all z-20 shadow-xl border border-white/10">
                 <i className="fa-solid fa-xmark text-xl"></i>
               </button>

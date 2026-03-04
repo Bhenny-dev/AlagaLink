@@ -7,7 +7,10 @@
 
         <title inertia>{{ config('app.name', 'AlagaLink') }}</title>
 
-        <link rel="icon" type="image/png" href="{{ asset('images/Alagalink_Logo/AlagaLink_Logo.png') }}">
+        <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/Alagalink_Logo/AlagaLink_Logo.png') }}">
+        <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('images/Alagalink_Logo/AlagaLink_Logo.png') }}">
+        <link rel="icon" type="image/png" sizes="512x512" href="{{ asset('images/Alagalink_Logo/AlagaLink_Logo.png') }}">
+        <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('images/Alagalink_Logo/AlagaLink_Logo.png') }}">
         <link rel="shortcut icon" type="image/png" href="{{ asset('images/Alagalink_Logo/AlagaLink_Logo.png') }}">
 
         <!-- Fonts -->

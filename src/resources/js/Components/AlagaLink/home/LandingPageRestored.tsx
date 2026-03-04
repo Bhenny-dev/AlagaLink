@@ -167,14 +167,15 @@ const LandingPage: React.FC<{ initialSection?: string | null; allowAdminRegistra
       <section id="home" className="relative min-h-screen flex flex-col items-center justify-center p-6 text-center overflow-hidden">
         <div className="relative z-10 max-w-4xl space-y-12">
           <div className="space-y-4">
-            <div className="w-28 h-28 md:w-32 md:h-32 mx-auto animate-float">
-              <div className="w-full h-full bg-white dark:bg-alaga-charcoal rounded-[32px] shadow-2xl border border-gray-100 dark:border-white/10 inner-glow flex items-center justify-center p-4">
+            <div className="w-[22rem] h-[22rem] md:w-[28rem] md:h-[28rem] mx-auto relative animate-float">
+              <div className="absolute inset-0 rounded-full bg-alaga-blue/20 blur-3xl"></div>
+              <div className="relative w-full h-full flex items-center justify-center">
                 <Image
                   src="/images/Alagalink_Logo/AlagaLink_Logo.png"
                   alt="AlagaLink"
-                  width={160}
-                  height={160}
-                  className="w-full h-full object-contain"
+                  width={1500}
+                  height={1500}
+                  className="w-full h-full object-contain alaga-logo-glow-light-blue"
                   priority
                 />
               </div>
