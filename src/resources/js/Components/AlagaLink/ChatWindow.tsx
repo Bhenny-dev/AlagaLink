@@ -186,6 +186,48 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   };
 
   const renderMessage = (msg: ChatMessage, idx: number) => {
+    const isMine = msg.role === 'user';
+
+    const renderAvatar = () => {
+      if (isMine) {
+        return currentUser?.photoUrl ? (
+          <Image
+            src={currentUser.photoUrl}
+            width={32}
+            height={32}
+            title="You"
+            alt="You"
+            className="w-8 h-8 rounded-xl object-cover shadow-sm"
+          />
+        ) : (
+          <div className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-white/10 shadow-sm" />
+        );
+      }
+
+      const avatarUrl = msg.senderProfile?.photoUrl || targetUser?.photoUrl;
+      const avatarAlt = msg.senderProfile?.fullName || (targetUser ? `${targetUser.firstName} ${targetUser.lastName}` : msg.senderName || 'Sender');
+
+      if (avatarUrl) {
+        return (
+          <Image
+            src={avatarUrl}
+            width={32}
+            height={32}
+            title={avatarAlt}
+            alt={avatarAlt}
+            className="w-8 h-8 rounded-xl object-cover shadow-sm"
+          />
+        );
+      }
+
+      // Fallback (e.g., consolidated "PDAO Office" thread)
+      return (
+        <div className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-white/10 shadow-sm flex items-center justify-center">
+          <i className="fa-solid fa-message text-[12px] opacity-60"></i>
+        </div>
+      );
+    };
+
     return (
       <div key={idx} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} animate-in fade-in slide-in-from-bottom-2`}>
         {msg.senderName && (
@@ -194,17 +236,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           </span>
         )}
 
-        <div className="flex items-start gap-3">
-          {/* Show staff avatar for admin views when available */}
-          {msg.senderProfile && currentUser?.role !== 'User' && (
-            msg.senderProfile.photoUrl ? (
-              <Image src={msg.senderProfile.photoUrl} width={32} height={32} title={msg.senderProfile.fullName} alt={msg.senderProfile.fullName} className="w-8 h-8 rounded-xl object-cover shadow-sm" />
-            ) : (
-              <div className="w-8 h-8 rounded-xl bg-gray-100 shadow-sm" />
-            )
-          )}
+        <div className={`flex items-end gap-3 max-w-full ${isMine ? 'flex-row-reverse' : ''}`}>
+          {renderAvatar()}
 
-          <div className={`max-w-[85%] px-5 py-3 rounded-[20px] text-sm font-medium leading-relaxed shadow-sm relative ${
+          <div className={`max-w-[85%] min-w-0 px-5 py-3 rounded-[20px] text-sm font-medium leading-relaxed shadow-sm relative whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${
             msg.role === 'user'
               ? 'bg-alaga-blue text-white rounded-br-none'
               : 'bg-white dark:bg-alaga-charcoal text-gray-800 dark:text-white rounded-bl-none border border-gray-100 dark:border-white/5'

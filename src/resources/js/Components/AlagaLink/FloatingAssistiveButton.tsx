@@ -235,7 +235,7 @@ const FloatingAssistiveButton: React.FC = () => {
               )}
                 <div className="mt-4 flex bg-white/10 p-1 rounded-xl">
                   <button onClick={() => setHubTab('PWD')} className={`flex-1 py-2 text-[9px] font-black uppercase rounded-lg transition-all ${hubTab === 'PWD' ? 'bg-white text-alaga-blue shadow-lg' : 'opacity-60'}`}>Members</button>
-                  {isSuperAdmin && <button onClick={() => setHubTab('Staff')} className={`flex-1 py-2 text-[9px] font-black uppercase rounded-lg transition-all ${hubTab === 'Staff' ? 'bg-white text-alaga-blue shadow-lg' : 'opacity-60'}`}>Staff</button>}
+                  <button onClick={() => setHubTab('Staff')} className={`flex-1 py-2 text-[9px] font-black uppercase rounded-lg transition-all ${hubTab === 'Staff' ? 'bg-white text-alaga-blue shadow-lg' : 'opacity-60'}`}>Staff</button>
                 </div>
               </header>
 

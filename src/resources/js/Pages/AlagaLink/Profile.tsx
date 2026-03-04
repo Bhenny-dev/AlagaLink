@@ -1,15 +1,18 @@
 
 'use client';
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { useAppContext } from '@/Providers/AlagaLink/AppContext';
+import { FamilyMember, UserProfile } from '@/Providers/AlagaLink/types';
 
 import ProfileHeader from '@/Components/AlagaLink/profile/ProfileHeader';
 import ProfileSidebar from '@/Components/AlagaLink/profile/ProfileSidebar';
 import ProfileHistory from '@/Components/AlagaLink/profile/ProfileHistory';
 import DigitalIdCard from '@/Components/AlagaLink/profile/DigitalIdCard';
+import RegistrationWorkflow from '@/Components/AlagaLink/members/RegistrationWorkflow';
 
 const Profile: React.FC = () => {
-  const { currentUser, programRequests } = useAppContext();
+  const { currentUser, programRequests, updateUser } = useAppContext();
+  const [isEditing, setIsEditing] = useState(false);
 
   if (!currentUser) return (
     <div className="py-40 text-center space-y-4">
@@ -23,9 +26,52 @@ const Profile: React.FC = () => {
   const idRequest = programRequests.find(r => r.userId === currentUser?.id && r.programType === 'ID' && r.status !== 'Rejected');
   const hasApprovedID = currentUser?.status === 'Active' && !!idRequest && !!currentUser?.idMetadata;
 
+  const canEditProfile = useMemo(
+    () => currentUser?.role === 'Admin' || currentUser?.role === 'SuperAdmin',
+    [currentUser?.role]
+  );
+
+  const handleEditSubmit = (formData: Partial<UserProfile>, _family: FamilyMember[]) => {
+    if (!currentUser) return false;
+    if (!canEditProfile) return false;
+
+    const updatedUser: UserProfile = {
+      ...currentUser,
+      ...(formData as UserProfile),
+    };
+
+    updateUser(updatedUser);
+    setIsEditing(false);
+    return true;
+  };
+
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-12">
-      <ProfileHeader user={currentUser} />
+      <ProfileHeader user={currentUser} canEdit={canEditProfile} onEdit={() => setIsEditing(true)} />
+
+      {isEditing && canEditProfile && (
+        <div className="fixed inset-0 z-[250] flex items-start justify-center p-0 md:p-10 bg-black/80 backdrop-blur-md alagalink-overlay-scroll alagalink-topbar-safe">
+          <div className="bg-white dark:bg-alaga-charcoal w-full h-full md:max-w-5xl md:h-[90vh] md:rounded-[32px] shadow-2xl relative overflow-y-auto no-scrollbar">
+            <button
+              type="button"
+              onClick={() => setIsEditing(false)}
+              className="absolute top-6 right-6 w-12 h-12 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all z-20 shadow-xl border border-white/10"
+              aria-label="Close edit"
+            >
+              <i className="fa-solid fa-xmark text-xl"></i>
+            </button>
+
+            <div className="p-8 md:p-10">
+              <RegistrationWorkflow
+                isEditMode={true}
+                initialData={currentUser}
+                onSubmit={handleEditSubmit}
+                onCancel={() => setIsEditing(false)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {hasApprovedID && currentUser && (
         <section className="animate-in slide-in-from-bottom-6 duration-1000">
