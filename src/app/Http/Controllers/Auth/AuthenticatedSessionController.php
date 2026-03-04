@@ -34,6 +34,9 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
 
         $user = $request->user();
+        if ($user) {
+            $user->syncPwdIdMetadata();
+        }
         $role = $user?->alagalink_role;
         $isAdmin = $role === 'Admin' || $role === 'SuperAdmin';
 

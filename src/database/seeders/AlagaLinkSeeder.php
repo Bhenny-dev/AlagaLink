@@ -217,7 +217,75 @@ class AlagaLinkSeeder extends Seeder
             ->whereNotNull('alagalink_id')
             ->where('alagalink_id', 'like', 'LT-PWD-%')
             ->orderBy('id')
-            ->get(['alagalink_id', 'alagalink_status', 'alagalink_data']);
+            ->get(['id', 'name', 'alagalink_id', 'alagalink_status', 'alagalink_data']);
+
+        // Ensure seeded registry users match digital ID eligibility rules:
+        // - Active + role=User => must have idMetadata
+        // - Pending/Suspended => must NOT have idMetadata
+        $usedIdNumbers = [];
+        $maxIssuedNumeric = 0;
+        foreach ($registryUsers as $u) {
+            $uData = is_array($u->alagalink_data) ? $u->alagalink_data : [];
+            $idNumber = data_get($uData, 'idMetadata.idNumber');
+            if (!is_string($idNumber) || trim($idNumber) === '') {
+                continue;
+            }
+
+            $usedIdNumbers[$idNumber] = true;
+            if (preg_match('/(\d+)\s*$/', $idNumber, $m) === 1) {
+                $maxIssuedNumeric = max($maxIssuedNumeric, (int) $m[1]);
+            }
+        }
+
+        $yearBase = ((int) now()->format('Y')) * 1000;
+        $nextIssuedNumeric = max($yearBase + 1, $maxIssuedNumeric + 1);
+        $baseUrl = rtrim((string) config('app.url', ''), '/');
+        if ($baseUrl === '') {
+            $baseUrl = 'https://alagalink.ph';
+        }
+
+        foreach ($registryUsers as $u) {
+            $status = (string) ($u->alagalink_status ?? 'Pending');
+            $uData = is_array($u->alagalink_data) ? $u->alagalink_data : [];
+
+            if ($status !== 'Active') {
+                if (array_key_exists('idMetadata', $uData)) {
+                    unset($uData['idMetadata']);
+                    $u->forceFill(['alagalink_data' => $uData])->save();
+                }
+                continue;
+            }
+
+            $existingIdNumber = data_get($uData, 'idMetadata.idNumber');
+            if (is_string($existingIdNumber) && trim($existingIdNumber) !== '') {
+                continue;
+            }
+
+            $candidate = null;
+            for ($i = 0; $i < 25; $i++) {
+                $c = 'CAR-BEN-LT-'.$nextIssuedNumeric++;
+                if (!isset($usedIdNumbers[$c])) {
+                    $candidate = $c;
+                    $usedIdNumbers[$c] = true;
+                    break;
+                }
+            }
+            if ($candidate === null) {
+                $candidate = 'CAR-BEN-LT-'.$nextIssuedNumeric++.'-'.Str::upper(Str::random(4));
+            }
+
+            $uData['idMetadata'] = [
+                'idNumber' => $candidate,
+                'issuedDate' => now()->toDateString(),
+                'expiryDate' => now()->addYears(5)->toDateString(),
+                'issuingOfficer' => 'ALAGALINK SYSTEM',
+                'issuingOffice' => 'PDAO La Trinidad',
+                'causeOfDisability' => (string) data_get($uData, 'customData.causeOfDisability', 'N/A'),
+                'qrCodeValue' => $baseUrl.'/verify/'.rawurlencode($candidate),
+            ];
+
+            $u->forceFill(['alagalink_data' => $uData])->save();
+        }
 
         $userIds = $registryUsers
             ->pluck('alagalink_id')

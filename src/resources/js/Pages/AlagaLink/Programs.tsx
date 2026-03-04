@@ -113,6 +113,11 @@ const Programs: React.FC = () => {
   };
 
   const handleApply = (type: string, title: string, itemId?: string, userIdOverride?: string, extraData?: Partial<ProgramAvailment>) => {
+    if (!isAdmin && currentUser?.status !== 'Active') {
+      window.alert('Your account is pending approval. You cannot avail programs and services until an admin approves your registration.');
+      return;
+    }
+
     const targetUserId = userIdOverride || currentUser?.id || 'anonymous';
 
     // Check if item still has stock

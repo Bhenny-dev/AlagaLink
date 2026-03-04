@@ -92,6 +92,8 @@ class UserProfileController extends Controller
             'alagalink_data' => $payload,
         ]);
 
+        $user->syncPwdIdMetadata($actor);
+
         return response()->json([
             'user' => $user->alagalink_data,
         ]);
@@ -166,6 +168,12 @@ class UserProfileController extends Controller
             'status' => (string) $data['status'],
         ];
 
+        // Retract any issued digital card if the user's new status is not eligible.
+        $isEligibleForId = ((string) $data['role'] === 'User') && ((string) $data['status'] === 'Active');
+        if (! $isEligibleForId && array_key_exists('idMetadata', $payload)) {
+            unset($payload['idMetadata']);
+        }
+
         $firstName = (string) ($payload['firstName'] ?? '');
         $lastName = (string) ($payload['lastName'] ?? '');
         $name = trim($firstName.' '.$lastName);
@@ -180,6 +188,9 @@ class UserProfileController extends Controller
             'alagalink_status' => (string) $data['status'],
             'alagalink_data' => $payload,
         ])->save();
+
+        // Keep ID issuance/retraction consistent after any status change.
+        $target->syncPwdIdMetadata($actor);
 
         return response()->json([
             'user' => $target->alagalink_data,
