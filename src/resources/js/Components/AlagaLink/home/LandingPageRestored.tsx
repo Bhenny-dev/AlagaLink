@@ -188,7 +188,7 @@ const LandingPage: React.FC<{ initialSection?: string | null; allowAdminRegistra
               scrollTo(joinRef);
               setShowLoginPopover(false);
             }}
-            className="px-12 py-6 bg-alaga-blue text-white rounded-[32px] font-black text-xl shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center gap-4 mx-auto"
+            className="px-12 py-6 bg-alaga-blue text-white rounded-[32px] font-black text-xl shadow-lg hover:scale-105 active:scale-95 transition-transform duration-200 focus:outline-none focus:ring-4 focus:ring-alaga-blue/20 flex items-center gap-4 mx-auto"
           >
             Enter Municipal Portal <i className="fa-solid fa-chevron-down text-sm animate-bounce"></i>
           </button>
@@ -324,19 +324,19 @@ const LandingPage: React.FC<{ initialSection?: string | null; allowAdminRegistra
               <div className="relative group">
                 <label className="text-[10px] font-black uppercase tracking-widest opacity-70 block mb-2">Email</label>
                 <i className="fa-solid fa-envelope absolute left-4 top-[46px] opacity-40 text-sm"></i>
-                <input required type="email" value={loginForm.data.email} onChange={e => { loginForm.setData('email', e.target.value); setLoginError(''); }} placeholder="Enter your email..." className="w-full pl-12 pr-6 py-4 bg-white/15 border-2 border-white/20 focus:border-white rounded-[16px] font-medium text-base placeholder:text-white/40 outline-none transition-all focus:bg-white/20" />
+                <input required type="email" value={loginForm.data.email} onChange={e => { loginForm.setData('email', e.target.value); setLoginError(''); }} placeholder="Enter your email..." className="w-full pl-12 pr-6 py-4 bg-white/15 border-2 border-white/25 rounded-[20px] font-medium text-base placeholder:text-white/40 outline-none transition-colors focus:bg-white/20 focus:border-white/40 focus:ring-2 focus:ring-white/30" />
               </div>
               <div className="relative group">
                 <label className="text-[10px] font-black uppercase tracking-widest opacity-70 block mb-2">Password</label>
                 <i className="fa-solid fa-lock absolute left-4 top-[46px] opacity-40 text-sm"></i>
-                <input required type="password" value={loginForm.data.password} onChange={(e) => { loginForm.setData('password', e.target.value); setLoginError(''); }} placeholder="Enter your password..." className="w-full pl-12 pr-6 py-4 bg-white/15 border-2 border-white/20 focus:border-white rounded-[16px] font-medium text-base placeholder:text-white/40 outline-none transition-all focus:bg-white/20" />
+                <input required type="password" value={loginForm.data.password} onChange={(e) => { loginForm.setData('password', e.target.value); setLoginError(''); }} placeholder="Enter your password..." className="w-full pl-12 pr-6 py-4 bg-white/15 border-2 border-white/25 rounded-[20px] font-medium text-base placeholder:text-white/40 outline-none transition-colors focus:bg-white/20 focus:border-white/40 focus:ring-2 focus:ring-white/30" />
               </div>
               {loginError && <div className="p-3 rounded-[12px] bg-red-500/20 border border-red-300/50 text-red-100 text-xs font-black flex items-center gap-2"><i className="fa-solid fa-exclamation-circle"></i> {loginError}</div>}
-              <button type="submit" disabled={loginForm.processing} className="w-full py-4 rounded-[16px] bg-white text-alaga-blue font-black uppercase tracking-widest text-sm hover:shadow-lg hover:shadow-white/50 hover:scale-105 transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-60 disabled:hover:scale-100"><i className="fa-solid fa-arrow-right-to-bracket"></i> Log In</button>
+              <button type="submit" disabled={loginForm.processing} className="w-full py-4 rounded-[20px] bg-white text-alaga-blue font-black uppercase tracking-widest text-sm hover:shadow-lg hover:shadow-white/50 hover:scale-105 transition-transform duration-200 active:scale-95 flex items-center justify-center gap-2 focus:outline-none focus:ring-4 focus:ring-white/30 disabled:opacity-60 disabled:hover:scale-100"><i className="fa-solid fa-arrow-right-to-bracket"></i> Log In</button>
             </form>
             <div className="flex items-center gap-4"><div className="h-px flex-1 bg-white/20"></div><p className="text-[11px] font-black uppercase opacity-60">New Here?</p><div className="h-px flex-1 bg-white/20"></div></div>
             {canUseAdminRegistration ? (
-              <button onClick={() => { setShowAdminRegistrationModal(true); setShowLoginPopover(false); setLoginError(''); loginForm.reset(); }} className="w-full py-4 rounded-[16px] bg-alaga-gold text-alaga-navy font-black uppercase tracking-widest text-sm hover:shadow-lg hover:shadow-alaga-gold/50 hover:scale-105 transition-all active:scale-95 flex items-center justify-center gap-2"><i className="fa-solid fa-user-plus"></i> Open Registration Portal</button>
+              <button onClick={() => { setShowAdminRegistrationModal(true); setShowLoginPopover(false); setLoginError(''); loginForm.reset(); }} className="w-full py-4 rounded-[20px] bg-alaga-gold text-alaga-navy font-black uppercase tracking-widest text-sm hover:shadow-lg hover:shadow-alaga-gold/50 hover:scale-105 transition-transform duration-200 active:scale-95 flex items-center justify-center gap-2 focus:outline-none focus:ring-4 focus:ring-alaga-gold/30"><i className="fa-solid fa-user-plus"></i> Open Registration Portal</button>
             ) : (
               <p className="text-center text-xs opacity-80 font-medium">New accounts are issued by municipal administrators.</p>
             )}

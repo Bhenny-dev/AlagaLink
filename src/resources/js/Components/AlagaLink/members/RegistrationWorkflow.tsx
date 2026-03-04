@@ -144,6 +144,10 @@ const RegistrationWorkflow: React.FC<RegistrationWorkflowProps> = ({
 
   const isStaff = formData.registrantType === 'PDAO Staff';
 
+  const primaryRingClass = isStaff ? 'ring-alaga-blue/30' : 'ring-alaga-teal/30';
+  const fieldBaseClass =
+    'w-full px-4 py-4 rounded-2xl bg-alaga-gray dark:bg-alaga-navy/30 border border-gray-200/70 dark:border-white/10 outline-none font-bold transition-colors focus:ring-2 focus:border-transparent';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmissionStatus('submitting');
@@ -252,49 +256,49 @@ const RegistrationWorkflow: React.FC<RegistrationWorkflowProps> = ({
                ].map(item => (
                  <div key={item.field} className="space-y-2">
                    <label className="text-[10px] font-black uppercase opacity-40 tracking-widest">{item.label}</label>
-                   <input required={item.required} value={formData[item.field as keyof UserProfile] as string || ''} onChange={e => setFormData({...formData, [item.field]: e.target.value})} className={`w-full p-4 rounded-2xl bg-alaga-gray dark:bg-alaga-navy/30 border-none outline-none focus:ring-2 font-bold ${isStaff ? 'ring-alaga-blue/30' : 'ring-alaga-teal/30'}`} />
+                   <input required={item.required} value={formData[item.field as keyof UserProfile] as string || ''} onChange={e => setFormData({...formData, [item.field]: e.target.value})} className={`${fieldBaseClass} ${primaryRingClass}`} />
                  </div>
                ))}
             </div>
             <div className="md:col-span-3 space-y-2">
               <label className="text-[10px] font-black uppercase opacity-40 tracking-widest">Permanent Address</label>
-              <input required value={formData.address || ''} onChange={e => setFormData({...formData, address: e.target.value})} className={`w-full p-4 rounded-2xl bg-alaga-gray dark:bg-alaga-navy/30 border-none outline-none focus:ring-2 font-bold ${isStaff ? 'ring-alaga-blue/30' : 'ring-alaga-teal/30'}`} />
+              <input required value={formData.address || ''} onChange={e => setFormData({...formData, address: e.target.value})} className={`${fieldBaseClass} ${primaryRingClass}`} />
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase opacity-40 tracking-widest">Birth Date</label>
-              <input type="date" required value={formData.birthDate || ''} onChange={handleBirthDateChange} className={`w-full p-4 rounded-2xl bg-alaga-gray dark:bg-alaga-navy/30 border-none outline-none focus:ring-2 font-bold ${isStaff ? 'ring-alaga-blue/30' : 'ring-alaga-teal/30'}`} />
+              <input type="date" required value={formData.birthDate || ''} onChange={handleBirthDateChange} className={`${fieldBaseClass} ${primaryRingClass}`} />
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase opacity-40 tracking-widest">Age (Auto-computed)</label>
-              <input type="number" readOnly value={formData.age || 0} className="w-full p-4 rounded-2xl bg-gray-200 dark:bg-alaga-navy/50 border-none outline-none font-black text-alaga-blue cursor-not-allowed" />
+              <input type="number" readOnly value={formData.age || 0} className="w-full px-4 py-4 rounded-2xl bg-gray-200 dark:bg-alaga-navy/50 border border-gray-200/70 dark:border-white/10 outline-none font-black text-alaga-blue cursor-not-allowed" />
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase opacity-40 tracking-widest">Sex</label>
-              <select value={formData.sex} onChange={e => setFormData({...formData, sex: e.target.value as 'Male' | 'Female' | 'Other'})} className={`w-full p-4 rounded-2xl bg-alaga-gray dark:bg-alaga-navy/30 border-none outline-none focus:ring-2 font-bold appearance-none ${isStaff ? 'ring-alaga-blue/30' : 'ring-alaga-teal/30'}`}><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select>
+              <select value={formData.sex} onChange={e => setFormData({...formData, sex: e.target.value as 'Male' | 'Female' | 'Other'})} className={`${fieldBaseClass} ${primaryRingClass} appearance-none cursor-pointer`}><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select>
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase opacity-40 tracking-widest">Blood Type</label>
-              <select value={formData.bloodType} onChange={e => setFormData({...formData, bloodType: e.target.value})} className={`w-full p-4 rounded-2xl bg-alaga-gray dark:bg-alaga-navy/30 border-none outline-none focus:ring-2 font-bold appearance-none ${isStaff ? 'ring-alaga-blue/30' : 'ring-alaga-teal/30'}`}><option value="O+">O+</option><option value="O-">O-</option><option value="A+">A+</option><option value="A-">A-</option><option value="B+">B+</option><option value="B-">B-</option><option value="AB+">AB+</option><option value="AB-">AB-</option></select>
+              <select value={formData.bloodType} onChange={e => setFormData({...formData, bloodType: e.target.value})} className={`${fieldBaseClass} ${primaryRingClass} appearance-none cursor-pointer`}><option value="O+">O+</option><option value="O-">O-</option><option value="A+">A+</option><option value="A-">A-</option><option value="B+">B+</option><option value="B-">B-</option><option value="AB+">AB+</option><option value="AB-">AB-</option></select>
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase opacity-40 tracking-widest">Occupation</label>
-              <input value={formData.occupation || ''} onChange={e => setFormData({...formData, occupation: e.target.value})} placeholder="e.g. Student, Farmer" className={`w-full p-4 rounded-2xl bg-alaga-gray dark:bg-alaga-navy/30 border-none outline-none focus:ring-2 font-bold ${isStaff ? 'ring-alaga-blue/30' : 'ring-alaga-teal/30'}`} />
+              <input value={formData.occupation || ''} onChange={e => setFormData({...formData, occupation: e.target.value})} placeholder="e.g. Student, Farmer" className={`${fieldBaseClass} ${primaryRingClass}`} />
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase opacity-40 tracking-widest">Civil Status</label>
-              <select value={formData.civilStatus} onChange={e => setFormData({...formData, civilStatus: e.target.value})} className={`w-full p-4 rounded-2xl bg-alaga-gray dark:bg-alaga-navy/30 border-none outline-none focus:ring-2 font-bold appearance-none ${isStaff ? 'ring-alaga-blue/30' : 'ring-alaga-teal/30'}`}><option value="Single">Single</option><option value="Married">Married</option><option value="Widowed">Widowed</option><option value="Separated">Separated</option></select>
+              <select value={formData.civilStatus} onChange={e => setFormData({...formData, civilStatus: e.target.value})} className={`${fieldBaseClass} ${primaryRingClass} appearance-none cursor-pointer`}><option value="Single">Single</option><option value="Married">Married</option><option value="Widowed">Widowed</option><option value="Separated">Separated</option></select>
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase opacity-40 tracking-widest">Contact Number</label>
-              <input required value={formData.contactNumber || ''} onChange={e => setFormData({...formData, contactNumber: e.target.value})} className={`w-full p-4 rounded-2xl bg-alaga-gray dark:bg-alaga-navy/30 border-none outline-none focus:ring-2 font-bold ${isStaff ? 'ring-alaga-blue/30' : 'ring-alaga-teal/30'}`} />
+              <input required value={formData.contactNumber || ''} onChange={e => setFormData({...formData, contactNumber: e.target.value})} className={`${fieldBaseClass} ${primaryRingClass}`} />
             </div>
             <div className="md:col-span-2 space-y-2">
               <label className="text-[10px] font-black uppercase opacity-40 tracking-widest">Email Address</label>
-              <input required type="email" value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value})} className={`w-full p-4 rounded-2xl bg-alaga-gray dark:bg-alaga-navy/30 border-none outline-none focus:ring-2 font-bold ${isStaff ? 'ring-alaga-blue/30' : 'ring-alaga-teal/30'}`} />
+              <input required type="email" value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value})} className={`${fieldBaseClass} ${primaryRingClass}`} />
             </div>
             <div className="md:col-span-1 space-y-2">
               <label className="text-[10px] font-black uppercase opacity-40 tracking-widest">Password</label>
-              <input required type="password" value={formData.password || ''} onChange={e => setFormData({...formData, password: e.target.value})} placeholder="Enter secure password" className={`w-full p-4 rounded-2xl bg-alaga-gray dark:bg-alaga-navy/30 border-none outline-none focus:ring-2 font-bold ${isStaff ? 'ring-alaga-blue/30' : 'ring-alaga-teal/30'}`} />
+              <input required type="password" value={formData.password || ''} onChange={e => setFormData({...formData, password: e.target.value})} placeholder="Enter secure password" className={`${fieldBaseClass} ${primaryRingClass}`} />
             </div>
           </div>
         </div>
@@ -304,14 +308,14 @@ const RegistrationWorkflow: React.FC<RegistrationWorkflowProps> = ({
             <div className="flex items-center gap-4 text-alaga-blue"><i className="fa-solid fa-briefcase text-2xl"></i><h3 className="text-xl font-black">2. Professional Qualifications (PDAO / MSWDO)</h3></div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-4">
-                 <div className="space-y-2"><label className="text-[10px] font-black uppercase opacity-40 tracking-widest">Highest Educational Attainment</label><input required value={qualifications.education} onChange={e => setQualifications({...qualifications, education: e.target.value})} className="w-full p-4 rounded-2xl bg-alaga-blue/5 border-none outline-none focus:ring-2 ring-alaga-blue/30 font-bold" placeholder="e.g. BS Social Work, Public Admin" /></div>
-                 <div className="space-y-2"><label className="text-[10px] font-black uppercase opacity-40 tracking-widest">Civil Service / PRC Eligibility</label><input required value={qualifications.eligibility} onChange={e => setQualifications({...qualifications, eligibility: e.target.value})} className="w-full p-4 rounded-2xl bg-alaga-blue/5 border-none outline-none focus:ring-2 ring-alaga-blue/30 font-bold" placeholder="e.g. Career Service Prof, Licensed Social Worker" /></div>
+                 <div className="space-y-2"><label className="text-[10px] font-black uppercase opacity-40 tracking-widest">Highest Educational Attainment</label><input required value={qualifications.education} onChange={e => setQualifications({...qualifications, education: e.target.value})} className={`${fieldBaseClass} ring-alaga-blue/30`} placeholder="e.g. BS Social Work, Public Admin" /></div>
+                 <div className="space-y-2"><label className="text-[10px] font-black uppercase opacity-40 tracking-widest">Civil Service / PRC Eligibility</label><input required value={qualifications.eligibility} onChange={e => setQualifications({...qualifications, eligibility: e.target.value})} className={`${fieldBaseClass} ring-alaga-blue/30`} placeholder="e.g. Career Service Prof, Licensed Social Worker" /></div>
                  <div className="flex items-center gap-4 p-4 bg-alaga-gray dark:bg-white/5 rounded-2xl"><input type="checkbox" checked={qualifications.isSocialWorker} onChange={e => setQualifications({...qualifications, isSocialWorker: e.target.checked})} className="w-5 h-5 accent-alaga-blue" /><label className="text-sm font-bold opacity-70">Applicant is a Licensed Social Worker</label></div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                 <div className="space-y-2"><label className="text-[10px] font-black uppercase opacity-40 tracking-widest">Relevant Training (Hrs)</label><input type="number" required value={qualifications.trainingHours} onChange={e => setQualifications({...qualifications, trainingHours: parseInt(e.target.value)})} className="w-full p-4 rounded-2xl bg-alaga-blue/5 border-none outline-none focus:ring-2 ring-alaga-blue/30 font-bold" /></div>
-                 <div className="space-y-2"><label className="text-[10px] font-black uppercase opacity-40 tracking-widest">Exp. in Social Welfare (Yrs)</label><input type="number" required value={qualifications.experienceYears} onChange={e => setQualifications({...qualifications, experienceYears: parseInt(e.target.value)})} className="w-full p-4 rounded-2xl bg-alaga-blue/5 border-none outline-none focus:ring-2 ring-alaga-blue/30 font-bold" /></div>
-                 <div className="col-span-2 space-y-2"><label className="text-[10px] font-black uppercase opacity-40 tracking-widest">Professional License No. (If applicable)</label><input value={qualifications.licenseNumber} onChange={e => setQualifications({...qualifications, licenseNumber: e.target.value})} className="w-full p-4 rounded-2xl bg-alaga-blue/5 border-none outline-none focus:ring-2 ring-alaga-blue/30 font-bold" placeholder="PRC-XXX-XXXXXXX" /></div>
+                 <div className="space-y-2"><label className="text-[10px] font-black uppercase opacity-40 tracking-widest">Relevant Training (Hrs)</label><input type="number" required value={qualifications.trainingHours} onChange={e => setQualifications({...qualifications, trainingHours: parseInt(e.target.value)})} className={`${fieldBaseClass} ring-alaga-blue/30`} /></div>
+                 <div className="space-y-2"><label className="text-[10px] font-black uppercase opacity-40 tracking-widest">Exp. in Social Welfare (Yrs)</label><input type="number" required value={qualifications.experienceYears} onChange={e => setQualifications({...qualifications, experienceYears: parseInt(e.target.value)})} className={`${fieldBaseClass} ring-alaga-blue/30`} /></div>
+                 <div className="col-span-2 space-y-2"><label className="text-[10px] font-black uppercase opacity-40 tracking-widest">Professional License No. (If applicable)</label><input value={qualifications.licenseNumber} onChange={e => setQualifications({...qualifications, licenseNumber: e.target.value})} className={`${fieldBaseClass} ring-alaga-blue/30`} placeholder="PRC-XXX-XXXXXXX" /></div>
               </div>
             </div>
           </div>
@@ -324,13 +328,13 @@ const RegistrationWorkflow: React.FC<RegistrationWorkflowProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                <div className="relative">
                   <label className="text-[10px] font-black uppercase opacity-40 tracking-widest mb-2 block">Primary Classification</label>
-                  <button type="button" onClick={() => setShowPicker(!showPicker)} className="w-full p-6 rounded-[12px] bg-purple-500/5 border border-purple-500/20 text-left flex justify-between items-center group hover:bg-purple-500/10 transition-all">
+                  <button type="button" onClick={() => setShowPicker(!showPicker)} className="w-full px-4 py-4 rounded-2xl bg-purple-500/5 border border-purple-500/20 text-left flex justify-between items-center group hover:bg-purple-500/10 transition-colors">
                     <div><span className="text-xl font-black text-purple-600">{formData.disabilityCategory}</span></div>
                     <i className="fa-solid fa-magnifying-glass text-xl opacity-20 group-hover:opacity-100 transition-opacity"></i>
                   </button>
                   {showPicker && (
                     <div className="absolute top-full mt-4 left-0 w-full bg-white dark:bg-alaga-charcoal shadow-2xl rounded-[16px] p-8 z-[100] border border-gray-100 dark:border-white/10 animate-in zoom-in-95 duration-200">
-                      <div className="relative mb-6"><i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 opacity-30"></i><input autoFocus placeholder="Search 14 IDEA categories..." className="w-full pl-12 pr-4 py-4 bg-alaga-gray dark:bg-alaga-navy/40 rounded-2xl border-none outline-none focus:ring-2 ring-purple-500/30" value={pickerSearch} onChange={e => setPickerSearch(e.target.value)} /></div>
+                      <div className="relative mb-6"><i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 opacity-30"></i><input autoFocus placeholder="Search 14 IDEA categories..." className="w-full pl-12 pr-4 py-4 rounded-2xl bg-alaga-gray dark:bg-alaga-navy/40 border border-gray-200/70 dark:border-white/10 outline-none transition-colors focus:ring-2 focus:border-transparent ring-purple-500/30" value={pickerSearch} onChange={e => setPickerSearch(e.target.value)} /></div>
                       <div className="grid grid-cols-1 gap-2 max-h-[300px] overflow-y-auto no-scrollbar">
                         {filteredCategories.map(c => (<div key={c} onClick={() => { setFormData({...formData, disabilityCategory: c as DisabilityCategory}); setShowPicker(false); }} className={`p-4 rounded-2xl cursor-pointer text-sm font-bold flex items-center justify-between transition-all ${formData.disabilityCategory === c ? 'bg-purple-500 text-white' : 'hover:bg-purple-500/10'}`}>{c}{formData.disabilityCategory === c && <i className="fa-solid fa-check"></i>}</div>))}
                       </div>
@@ -343,7 +347,7 @@ const RegistrationWorkflow: React.FC<RegistrationWorkflowProps> = ({
                   <select
                     value={formData.customData?.causeOfDisability || 'Congenital'}
                     onChange={e => setFormData({...formData, customData: {...formData.customData, causeOfDisability: e.target.value}})}
-                    className="w-full p-6 rounded-[12px] bg-alaga-gray dark:bg-alaga-navy/30 border-none outline-none focus:ring-2 ring-purple-500/30 font-bold appearance-none"
+                    className="w-full px-4 py-4 rounded-2xl bg-alaga-gray dark:bg-alaga-navy/30 border border-gray-200/70 dark:border-white/10 outline-none font-bold transition-colors focus:ring-2 focus:border-transparent ring-purple-500/30 appearance-none cursor-pointer"
                   >
                     <option value="Congenital">Congenital / Inborn</option>
                     <option value="Acquired (Accident)">Acquired (Accident)</option>
@@ -363,10 +367,10 @@ const RegistrationWorkflow: React.FC<RegistrationWorkflowProps> = ({
                 <div className="grid grid-cols-1 gap-4">
                   {familyMembers.map((member) => (
                     <div key={member.id} className="p-6 bg-alaga-gray dark:bg-alaga-navy/20 rounded-[16px] border border-gray-100 dark:border-white/5 grid grid-cols-1 md:grid-cols-4 gap-4 items-end relative"><button type="button" onClick={() => removeFamilyMember(member.id)} className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all"><i className="fa-solid fa-times"></i></button>
-                      <div className="space-y-1"><label className="text-[10px] font-black uppercase opacity-40">Full Name</label><input value={member.fullName} onChange={e => updateFamilyMember(member.id, 'fullName', e.target.value)} className="w-full p-3 rounded-xl bg-white dark:bg-alaga-charcoal border-none outline-none font-bold" /></div>
-                      <div className="space-y-1"><label className="text-[10px] font-black uppercase opacity-40">Relation</label><input value={member.relation} onChange={e => updateFamilyMember(member.id, 'relation', e.target.value)} className="w-full p-3 rounded-xl bg-white dark:bg-alaga-charcoal border-none outline-none font-bold" /></div>
-                      <div className="space-y-1"><label className="text-[10px] font-black uppercase opacity-40">Age</label><input type="number" value={member.age} onChange={e => updateFamilyMember(member.id, 'age', parseInt(e.target.value))} className="w-full p-3 rounded-xl bg-white dark:bg-alaga-charcoal border-none outline-none font-bold" /></div>
-                      <div className="space-y-1"><label className="text-[10px] font-black uppercase opacity-40">Sex</label><select value={member.sex} onChange={e => updateFamilyMember(member.id, 'sex', e.target.value as 'Male' | 'Female' | 'Other')} className="w-full p-3 rounded-xl bg-white dark:bg-alaga-charcoal border-none outline-none font-bold"><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></div>
+                      <div className="space-y-1"><label className="text-[10px] font-black uppercase opacity-40">Full Name</label><input value={member.fullName} onChange={e => updateFamilyMember(member.id, 'fullName', e.target.value)} className="w-full px-4 py-3 rounded-2xl bg-white dark:bg-alaga-charcoal border border-gray-100 dark:border-white/10 outline-none font-bold transition-colors focus:ring-2 focus:border-transparent ring-alaga-gold/30" /></div>
+                      <div className="space-y-1"><label className="text-[10px] font-black uppercase opacity-40">Relation</label><input value={member.relation} onChange={e => updateFamilyMember(member.id, 'relation', e.target.value)} className="w-full px-4 py-3 rounded-2xl bg-white dark:bg-alaga-charcoal border border-gray-100 dark:border-white/10 outline-none font-bold transition-colors focus:ring-2 focus:border-transparent ring-alaga-gold/30" /></div>
+                      <div className="space-y-1"><label className="text-[10px] font-black uppercase opacity-40">Age</label><input type="number" value={member.age} onChange={e => updateFamilyMember(member.id, 'age', parseInt(e.target.value))} className="w-full px-4 py-3 rounded-2xl bg-white dark:bg-alaga-charcoal border border-gray-100 dark:border-white/10 outline-none font-bold transition-colors focus:ring-2 focus:border-transparent ring-alaga-gold/30" /></div>
+                      <div className="space-y-1"><label className="text-[10px] font-black uppercase opacity-40">Sex</label><select value={member.sex} onChange={e => updateFamilyMember(member.id, 'sex', e.target.value as 'Male' | 'Female' | 'Other')} className="w-full px-4 py-3 rounded-2xl bg-white dark:bg-alaga-charcoal border border-gray-100 dark:border-white/10 outline-none font-bold transition-colors focus:ring-2 focus:border-transparent ring-alaga-gold/30 appearance-none cursor-pointer"><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></div>
                     </div>
                   ))}
                 </div>
@@ -378,9 +382,9 @@ const RegistrationWorkflow: React.FC<RegistrationWorkflowProps> = ({
         <div className="bg-white dark:bg-alaga-charcoal rounded-[20px] p-10 shadow-sm border border-gray-100 dark:border-white/5 space-y-8">
           <div className="flex items-center gap-4 text-red-500"><i className="fa-solid fa-phone-volume text-2xl"></i><h3 className="text-xl font-black">{(isStaff ? '3. ' : '4. ') + 'Emergency Contact Info'}</h3></div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="space-y-2"><label className="text-[10px] font-black uppercase opacity-40 tracking-widest">Full Name</label><input required value={emergencyContact.name} onChange={e => setEmergencyContact({...emergencyContact, name: e.target.value})} className="w-full p-4 rounded-2xl bg-alaga-gray dark:bg-alaga-navy/30 border-none outline-none focus:ring-2 ring-red-500/30 font-bold" /></div>
-            <div className="space-y-2"><label className="text-[10px] font-black uppercase opacity-40 tracking-widest">Relation</label><input required value={emergencyContact.relation} onChange={e => setEmergencyContact({...emergencyContact, relation: e.target.value})} className="w-full p-4 rounded-2xl bg-alaga-gray dark:bg-alaga-navy/30 border-none outline-none focus:ring-2 ring-red-500/30 font-bold" /></div>
-            <div className="space-y-2"><label className="text-[10px] font-black uppercase opacity-40 tracking-widest">Contact Number</label><input required value={emergencyContact.contact} onChange={e => setEmergencyContact({...emergencyContact, contact: e.target.value})} className="w-full p-4 rounded-2xl bg-alaga-gray dark:bg-alaga-navy/30 border-none outline-none focus:ring-2 ring-red-500/30 font-bold" /></div>
+            <div className="space-y-2"><label className="text-[10px] font-black uppercase opacity-40 tracking-widest">Full Name</label><input required value={emergencyContact.name} onChange={e => setEmergencyContact({...emergencyContact, name: e.target.value})} className={`${fieldBaseClass} ring-red-500/30`} /></div>
+            <div className="space-y-2"><label className="text-[10px] font-black uppercase opacity-40 tracking-widest">Relation</label><input required value={emergencyContact.relation} onChange={e => setEmergencyContact({...emergencyContact, relation: e.target.value})} className={`${fieldBaseClass} ring-red-500/30`} /></div>
+            <div className="space-y-2"><label className="text-[10px] font-black uppercase opacity-40 tracking-widest">Contact Number</label><input required value={emergencyContact.contact} onChange={e => setEmergencyContact({...emergencyContact, contact: e.target.value})} className={`${fieldBaseClass} ring-red-500/30`} /></div>
           </div>
         </div>
 
