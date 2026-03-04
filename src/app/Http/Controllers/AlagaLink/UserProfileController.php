@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\AlagaLink;
 
 use App\Http\Controllers\Controller;
+use App\Models\AlagaLinkNotification;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -159,6 +161,10 @@ class UserProfileController extends Controller
         }
 
         $existing = is_array($target->alagalink_data) ? $target->alagalink_data : [];
+
+        $previousRole = (string) ($target->alagalink_role ?: ($existing['role'] ?? 'User'));
+        $newRole = (string) $data['role'];
+
         $payload = [
             ...$existing,
             ...$data,
@@ -192,8 +198,97 @@ class UserProfileController extends Controller
         // Keep ID issuance/retraction consistent after any status change.
         $target->syncPwdIdMetadata($actor);
 
+        $responseNotifications = [];
+
+        // Create an Activity log entry when the user's role changes.
+        if ($previousRole !== $newRole) {
+            $targetId = (string) ($target->alagalink_id ?? $alagalinkId);
+            $actorId = (string) ($actor->alagalink_id ?? '');
+
+            $isPromotion = $newRole !== 'User' && $previousRole === 'User';
+            $isDemotion = $newRole === 'User' && $previousRole !== 'User';
+
+            $type = $isPromotion ? 'Success' : ($isDemotion ? 'Warning' : 'Info');
+            $title = $isPromotion ? 'Role Updated — Promoted' : ($isDemotion ? 'Role Updated — Demoted' : 'Role Updated');
+            $message = "Role changed: {$previousRole} → {$newRole}.";
+            $targetLink = "profile:activities:{$targetId}";
+            $adminLink = "members:user:{$targetId}";
+
+            $commonData = [
+                'action' => 'role_changed',
+                'previousRole' => $previousRole,
+                'newRole' => $newRole,
+                'targetUserId' => $targetId,
+                'actorUserId' => $actorId !== '' ? $actorId : null,
+            ];
+
+            $targetNotifId = 'notif-'.(string) Str::ulid();
+            AlagaLinkNotification::query()->create([
+                'id' => $targetNotifId,
+                'user_id' => $targetId,
+                'target_role' => null,
+                'title' => $title,
+                'message' => $message,
+                'type' => $type,
+                'date' => now(),
+                'is_read' => false,
+                'link' => $targetLink,
+                'program_type' => null,
+                'data' => $commonData,
+            ]);
+
+            $targetNotifPayload = [
+                'id' => $targetNotifId,
+                'userId' => $targetId,
+                'targetRole' => null,
+                'title' => $title,
+                'message' => $message,
+                'type' => $type,
+                'date' => now()->toISOString(),
+                'isRead' => false,
+                'link' => $targetLink,
+                'programType' => null,
+                'data' => $commonData,
+            ];
+
+            if ($actorId !== '' && $actorId !== $targetId) {
+                $adminNotifId = 'notif-'.(string) Str::ulid();
+                AlagaLinkNotification::query()->create([
+                    'id' => $adminNotifId,
+                    'user_id' => $actorId,
+                    'target_role' => null,
+                    'title' => 'Staff Role Updated',
+                    'message' => "Updated {$targetId}: {$previousRole} → {$newRole}.",
+                    'type' => 'Info',
+                    'date' => now(),
+                    'is_read' => false,
+                    'link' => $adminLink,
+                    'program_type' => null,
+                    'data' => $commonData,
+                ]);
+
+                $responseNotifications[] = [
+                    'id' => $adminNotifId,
+                    'userId' => $actorId,
+                    'targetRole' => null,
+                    'title' => 'Staff Role Updated',
+                    'message' => "Updated {$targetId}: {$previousRole} → {$newRole}.",
+                    'type' => 'Info',
+                    'date' => now()->toISOString(),
+                    'isRead' => false,
+                    'link' => $adminLink,
+                    'programType' => null,
+                    'data' => $commonData,
+                ];
+            } elseif ($actorId !== '' && $actorId === $targetId) {
+                // When editing self, the target notification is also visible immediately.
+                $responseNotifications[] = $targetNotifPayload;
+            }
+        }
+
         return response()->json([
             'user' => $target->alagalink_data,
+            'notifications' => $responseNotifications,
         ]);
     }
 }

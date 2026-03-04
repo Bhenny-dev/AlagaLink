@@ -1,8 +1,10 @@
 {
     "compilerOptions": {
+        "jsx": "react-jsx",
         "baseUrl": ".",
         "paths": {
             "@/*": ["resources/js/*"],
+            "next/image": ["resources/js/Providers/AlagaLink/next-image.tsx"],
             "ziggy-js": ["./vendor/tightenco/ziggy"]
         }
     },

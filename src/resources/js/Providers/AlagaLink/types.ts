@@ -147,13 +147,17 @@ export interface ProgramAvailment {
   userId: string;
   programType: 'ID' | 'Device' | 'Medical' | 'PhilHealth' | 'Livelihood';
   title: string;
-  status: 'Pending' | 'Approved' | 'Rejected' | 'Completed' | 'Ready for Claiming' | 'Out for Delivery';
+  status: 'Pending' | 'Approved' | 'Rejected' | 'Completed' | 'Ready for Claiming' | 'Out for Delivery' | 'Claimed';
   dateApplied: string;
   details?: string;
   paymentStatus?: 'Unpaid' | 'Paid';
   paymentMethod?: 'Online' | 'Upon Claiming';
   issuanceDate?: string;
   issuanceLocation?: string;
+  readyForClaimingAt?: string;
+  claimedAt?: string;
+  claimedLocation?: string;
+  missingReportedAt?: string;
   adminNarrative?: Narrative;
   philhealthConsent?: boolean;
   deliveryMethod?: 'Pickup' | 'Delivery';

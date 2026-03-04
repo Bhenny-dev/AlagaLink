@@ -45,6 +45,7 @@ Route::middleware('auth')->prefix('api')->group(function () {
 
     Route::post('/alagalink/program-availments', [ProgramAvailmentController::class, 'store']);
     Route::patch('/alagalink/program-availments/{id}', [ProgramAvailmentController::class, 'update']);
+    Route::post('/alagalink/program-availments/{id}/report-missing', [ProgramAvailmentController::class, 'reportMissing']);
 
     Route::patch('/alagalink/notifications/{id}', [NotificationController::class, 'markRead']);
     Route::post('/alagalink/notifications/clear', [NotificationController::class, 'clear']);

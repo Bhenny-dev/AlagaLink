@@ -19,9 +19,9 @@ const Profile: React.FC = () => {
     </div>
   );
 
-  // Check if user has approved PWD ID Issuance
-  const approvedIDRequest = programRequests.find(r => r.userId === currentUser?.id && r.programType === 'ID' && r.status === 'Approved');
-  const hasApprovedID = currentUser?.status === 'Active' && !!approvedIDRequest && !!currentUser?.idMetadata;
+  // Show digital ID for eligible users once an ID request exists (except rejected).
+  const idRequest = programRequests.find(r => r.userId === currentUser?.id && r.programType === 'ID' && r.status !== 'Rejected');
+  const hasApprovedID = currentUser?.status === 'Active' && !!idRequest && !!currentUser?.idMetadata;
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-12">

@@ -12,6 +12,7 @@ import PhilHealthPortal from '@/Components/AlagaLink/programs/PhilHealthPortal';
 import InventoryPortal from '@/Components/AlagaLink/programs/InventoryPortal';
 import FallbackImage from '@/Components/AlagaLink/shared/FallbackImage';
 import RegistrationWorkflow from '@/Components/AlagaLink/members/RegistrationWorkflow';
+import DigitalIdCard from '@/Components/AlagaLink/profile/DigitalIdCard';
 
 type ProgramModalType = 'none' | 'ID' | 'Device' | 'Medical' | 'PhilHealth' | 'Livelihood';
 
@@ -28,6 +29,7 @@ const Programs: React.FC = () => {
     programRequests,
     addProgramRequest,
     updateProgramRequest,
+    reportMissingProgramRequest,
     notifications
   } = useAppContext();
 
@@ -458,7 +460,7 @@ const Programs: React.FC = () => {
                     Application Backlog
                   </h5>
                   <div className="flex flex-wrap gap-2">
-                    {['All', 'Pending', 'Approved', 'Ready for Claiming', 'Rejected'].map(status => (
+                    {['All', 'Pending', 'Approved', 'Ready for Claiming', 'Claimed', 'Rejected'].map(status => (
                       <button
                         key={status}
                         onClick={() => setBacklogFilter(status)}
@@ -500,7 +502,7 @@ const Programs: React.FC = () => {
                             </div>
                             <div className="flex items-center gap-8">
                                 <span className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl inner-glow ${
-                                    req.status === 'Completed' || req.status === 'Approved' ? 'bg-alaga-teal text-white' :
+                                  req.status === 'Completed' || req.status === 'Approved' || req.status === 'Claimed' ? 'bg-alaga-teal text-white' :
                                     req.status === 'Pending' ? 'bg-alaga-gold text-alaga-navy' :
                                     req.status === 'Rejected' ? 'bg-red-500 text-white' :
                                     req.status === 'Ready for Claiming' ? 'bg-purple-500 text-white animate-pulse' :
@@ -539,10 +541,61 @@ const Programs: React.FC = () => {
               <h3 className="text-4xl font-black text-3d">Application: {userIDRequest.status}</h3>
               <p className="opacity-60 text-lg font-medium">Your request for a PWD ID was submitted on {userIDRequest.dateApplied}.</p>
               {userIDRequest.status === 'Ready for Claiming' && (
-                <div className="p-8 bg-alaga-teal/10 text-alaga-teal rounded-[32px] font-black text-xl inflated-card border border-alaga-teal/20 animate-bounce">
-                  <i className="fa-solid fa-location-dot mr-3"></i>
-                  Claim at PDAO Office, Km. 5
-                </div>
+                <>
+                  <div className="p-8 bg-alaga-teal/10 text-alaga-teal rounded-[32px] font-black text-xl inflated-card border border-alaga-teal/20 animate-bounce">
+                    <i className="fa-solid fa-location-dot mr-3"></i>
+                    Claim at {userIDRequest.issuanceLocation || 'PDAO Office, Km. 5'}
+                  </div>
+
+                  {currentUser?.idMetadata && (
+                    <div className="pt-4">
+                      <div className="max-w-2xl mx-auto space-y-6">
+                        <div className="text-center space-y-2">
+                          <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40">Claim Reference</p>
+                          <p className="text-sm opacity-60 font-medium">Present this digital ID when claiming your physical card copy.</p>
+                        </div>
+                        <DigitalIdCard user={currentUser} />
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+              {userIDRequest.status === 'Claimed' && (
+                <>
+                  <div className="p-8 bg-alaga-teal/10 text-alaga-teal rounded-[32px] font-black text-xl inflated-card border border-alaga-teal/20">
+                    <i className="fa-solid fa-circle-check mr-3"></i>
+                    Physical ID Claimed
+                  </div>
+                  <div className="max-w-2xl mx-auto p-6 bg-alaga-gray dark:bg-white/5 rounded-[32px] border border-gray-100 dark:border-white/10 text-left space-y-2">
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40">Claim Details</p>
+                    <p className="text-sm font-bold opacity-80">Location: <span className="font-black text-alaga-blue">{userIDRequest.claimedLocation || userIDRequest.issuanceLocation || 'PDAO Office, Km. 5'}</span></p>
+                    {userIDRequest.claimedAt && (
+                      <p className="text-xs opacity-60 font-medium">Claimed on {new Date(userIDRequest.claimedAt).toLocaleString()}</p>
+                    )}
+                  </div>
+
+                  <div className="pt-2">
+                    <button
+                      onClick={() => {
+                        const ok = window.confirm('Report your physical ID card as missing? Staff validation will be required before replacement issuance.');
+                        if (!ok) return;
+                        reportMissingProgramRequest(userIDRequest.id);
+                      }}
+                      disabled={!!userIDRequest.missingReportedAt}
+                      className={`px-10 py-4 rounded-[24px] font-black text-sm shadow-2xl transition-all ${
+                        userIDRequest.missingReportedAt
+                          ? 'bg-gray-200 text-gray-600 dark:bg-white/10 dark:text-white/40 cursor-not-allowed'
+                          : 'bg-red-500 text-white hover:scale-105 active:scale-95'
+                      }`}
+                    >
+                      <i className="fa-solid fa-triangle-exclamation mr-3"></i>
+                      {userIDRequest.missingReportedAt ? 'Missing Card Reported' : 'Report Missing Card'}
+                    </button>
+                    {userIDRequest.missingReportedAt && (
+                      <p className="mt-3 text-xs opacity-60 font-medium">Reported on {new Date(userIDRequest.missingReportedAt).toLocaleString()}</p>
+                    )}
+                  </div>
+                </>
               )}
             </div>
           ) : (
@@ -809,6 +862,10 @@ const Programs: React.FC = () => {
                 }}
                 onReject={(id, status) => {
                   updateProgramRequest({...selectedRequest, status});
+                  closeModal();
+                }}
+                onUpdate={(id, patch) => {
+                  updateProgramRequest({ ...selectedRequest, ...patch });
                   closeModal();
                 }}
               />

@@ -7,7 +7,8 @@
 
         <title inertia>{{ config('app.name', 'AlagaLink') }}</title>
 
-        <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+        <link rel="icon" type="image/png" href="{{ asset('images/Alagalink_Logo/AlagaLink_Logo.png') }}">
+        <link rel="shortcut icon" type="image/png" href="{{ asset('images/Alagalink_Logo/AlagaLink_Logo.png') }}">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">

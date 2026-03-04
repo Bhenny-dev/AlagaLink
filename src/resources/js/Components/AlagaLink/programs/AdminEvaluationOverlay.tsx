@@ -9,18 +9,23 @@ interface AdminEvaluationOverlayProps {
   onClose: () => void;
   onApprove: (id: string, status: ProgramAvailment['status'], narrative: Narrative) => void;
   onReject: (id: string, status: ProgramAvailment['status']) => void;
+  onUpdate?: (id: string, patch: Partial<ProgramAvailment>) => void;
 }
 
-const AdminEvaluationOverlay: React.FC<AdminEvaluationOverlayProps> = ({ req, user, fields, onClose, onApprove, onReject }) => {
-  const isFinalized = req.status !== 'Pending';
+const AdminEvaluationOverlay: React.FC<AdminEvaluationOverlayProps> = ({ req, user, fields, onClose, onApprove, onReject, onUpdate }) => {
+  const isDecisionStage = req.status === 'Pending';
+  const isIdLifecycleStage = req.programType === 'ID' && (req.status === 'Approved' || req.status === 'Ready for Claiming');
+  const isFinalized = req.programType === 'ID'
+    ? (req.status === 'Rejected' || req.status === 'Claimed')
+    : req.status !== 'Pending';
 
   // Basic logic to detect common mismatches for assistive devices
   const checkMismatch = () => {
     if (!user || req.programType !== 'Device') return null;
-    
+
     const category = user.disabilityCategory;
     const title = req.title.toLowerCase();
-    
+
     const isMobilityItem = title.includes('wheelchair') || title.includes('crutch') || title.includes('cane');
     const isHearingItem = title.includes('hearing');
     const isVisualItem = title.includes('braille') || title.includes('white cane');
@@ -99,64 +104,128 @@ const AdminEvaluationOverlay: React.FC<AdminEvaluationOverlayProps> = ({ req, us
               <h3 className="text-4xl font-black">Evaluation Desk</h3>
               <p className="opacity-60 font-medium">Processing Request: <span className="text-alaga-blue font-black underline">{req.title}</span></p>
             </div>
-            {isFinalized && (
-              <div className={`flex items-center gap-3 px-8 py-3 rounded-full font-black text-xs uppercase tracking-widest shadow-xl ${req.status === 'Approved' ? 'bg-alaga-teal text-white' : req.status === 'Rejected' ? 'bg-red-500 text-white' : 'bg-alaga-blue text-white'}`}>
-                <i className={`fa-solid ${req.status === 'Approved' ? 'fa-circle-check' : req.status === 'Rejected' ? 'fa-circle-xmark' : 'fa-clock'}`}></i>
+            {!isDecisionStage && (
+              <div className={`flex items-center gap-3 px-8 py-3 rounded-full font-black text-xs uppercase tracking-widest shadow-xl ${
+                req.status === 'Approved' || req.status === 'Completed' || req.status === 'Claimed'
+                  ? 'bg-alaga-teal text-white'
+                  : req.status === 'Rejected'
+                    ? 'bg-red-500 text-white'
+                    : req.status === 'Ready for Claiming'
+                      ? 'bg-purple-500 text-white'
+                        : 'bg-alaga-blue text-white'
+              }`}>
+                <i className={`fa-solid ${
+                  req.status === 'Approved' || req.status === 'Completed' || req.status === 'Claimed'
+                    ? 'fa-circle-check'
+                    : req.status === 'Rejected'
+                      ? 'fa-circle-xmark'
+                      : req.status === 'Ready for Claiming'
+                        ? 'fa-box'
+                          : 'fa-clock'
+                }`}></i>
                 Status: {req.status}
               </div>
             )}
           </div>
-          
+
           <div className="flex-1 space-y-8">
             <div className="bg-alaga-gray dark:bg-alaga-navy/20 p-8 rounded-[20px] border border-gray-100 dark:border-white/5 space-y-8">
               <div className="flex items-center gap-3 text-alaga-blue">
                 <i className="fa-solid fa-clipboard-check text-xl"></i>
                 <h5 className="font-black uppercase text-sm tracking-widest">Decision Narrative</h5>
               </div>
-              
+
               <div className="space-y-6">
                 {fields}
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase opacity-50 tracking-widest">Justification / Findings</label>
-                  <textarea 
-                    rows={8} 
+                  <textarea
+                    rows={8}
                     id="eval-narrative"
-                    readOnly={isFinalized}
-                    className={`w-full p-6 rounded-[16px] bg-white dark:bg-alaga-charcoal border-2 border-gray-100 dark:border-white/5 outline-none focus:border-alaga-blue transition-all text-sm leading-relaxed ${isFinalized ? 'opacity-50 italic cursor-not-allowed' : ''}`} 
-                    placeholder={isFinalized ? "" : "Document the assessment findings and reasons for the final decision..."}
+                    readOnly={!isDecisionStage}
+                    className={`w-full p-6 rounded-[16px] bg-white dark:bg-alaga-charcoal border-2 border-gray-100 dark:border-white/5 outline-none focus:border-alaga-blue transition-all text-sm leading-relaxed ${isFinalized ? 'opacity-50 italic cursor-not-allowed' : ''}`}
+                    placeholder={!isDecisionStage ? "" : "Document the assessment findings and reasons for the final decision..."}
                     defaultValue={req.adminNarrative?.why || ""}
                   ></textarea>
                 </div>
               </div>
             </div>
 
-            {!isFinalized ? (
+            {isDecisionStage ? (
               <div className="flex flex-col sm:flex-row gap-6 pt-4">
-                <button 
+                <button
                   onClick={() => {
                     const why = (document.getElementById('eval-narrative') as HTMLTextAreaElement).value;
-                    const nav: Narrative = { 
-                      what: req.title, 
-                      when: new Date().toISOString(), 
-                      how: 'Admin Evaluation Desk', 
-                      why: why || 'Request approved after manual review of credentials.' 
+                    const nav: Narrative = {
+                      what: req.title,
+                      when: new Date().toISOString(),
+                      how: 'Admin Evaluation Desk',
+                      why: why || 'Request approved after manual review of credentials.'
                     };
                     onApprove(req.id, 'Approved', nav);
-                  }} 
+                  }}
                   className="flex-1 bg-alaga-teal text-white py-6 rounded-[20px] font-black text-lg shadow-2xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
                 >
                   <i className="fa-solid fa-check-double"></i>
                   Approve & Registry Update
                 </button>
-                <button 
+                <button
                   onClick={() => {
                     onReject(req.id, 'Rejected');
-                  }} 
+                  }}
                   className="flex-1 bg-white dark:bg-alaga-charcoal text-red-500 border-2 border-red-500 py-6 rounded-[20px] font-black text-lg shadow-xl hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-3"
                 >
                   <i className="fa-solid fa-ban"></i>
                   Reject Request
                 </button>
+              </div>
+            ) : isIdLifecycleStage ? (
+              <div className="space-y-6 pt-4">
+                <div className="p-6 bg-alaga-gray dark:bg-alaga-navy/20 rounded-[20px] border border-gray-100 dark:border-white/5">
+                  <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-2">PWD ID Release Workflow</p>
+                  <p className="text-sm font-medium opacity-70">Advance the physical card lifecycle after approval.</p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-6">
+                  {req.status === 'Approved' && (
+                    <button
+                      onClick={() => {
+                        if (!onUpdate) return;
+                        onUpdate(req.id, {
+                          status: 'Ready for Claiming',
+                          readyForClaimingAt: new Date().toISOString(),
+                          issuanceLocation: req.issuanceLocation || 'PDAO Office, Km. 5',
+                        });
+                      }}
+                      className="flex-1 bg-purple-500 text-white py-6 rounded-[20px] font-black text-lg shadow-2xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
+                    >
+                      <i className="fa-solid fa-box"></i>
+                      Mark Ready for Claiming
+                    </button>
+                  )}
+
+                  {req.status === 'Ready for Claiming' && (
+                    <button
+                      onClick={() => {
+                        if (!onUpdate) return;
+                        onUpdate(req.id, {
+                          status: 'Claimed',
+                          claimedAt: new Date().toISOString(),
+                          claimedLocation: req.issuanceLocation || 'PDAO Office, Km. 5',
+                        });
+                      }}
+                      className="flex-1 bg-alaga-teal text-white py-6 rounded-[20px] font-black text-lg shadow-2xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
+                    >
+                      <i className="fa-solid fa-id-card"></i>
+                      Mark as Claimed
+                    </button>
+                  )}
+
+                  <button onClick={onClose} className="flex-1 bg-white dark:bg-alaga-charcoal text-alaga-blue border-2 border-alaga-blue py-6 rounded-[20px] font-black text-lg shadow-xl hover:bg-alaga-blue hover:text-white transition-all flex items-center justify-center gap-3">
+                    <i className="fa-solid fa-arrow-left"></i>
+                    Return
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="p-10 bg-alaga-blue/5 border-2 border-dashed border-alaga-blue/10 rounded-[20px] text-center space-y-6">

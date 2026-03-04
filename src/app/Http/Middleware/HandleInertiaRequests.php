@@ -124,7 +124,21 @@ class HandleInertiaRequests extends Middleware
 
             $programRequests = [];
             if (Schema::hasTable('alagalink_program_availments')) {
-                $programRequests = AlagaLinkProgramAvailment::query()->orderBy('id')->get()->pluck('data')->all();
+                $programRequests = AlagaLinkProgramAvailment::query()
+                    ->orderBy('id')
+                    ->get()
+                    ->pluck('data')
+                    ->map(function ($data) {
+                        if (! is_array($data)) return $data;
+                        if (($data['programType'] ?? null) !== 'ID') return $data;
+                        if (($data['status'] ?? null) !== 'Missing Reported') return $data;
+
+                        return [
+                            ...$data,
+                            'status' => 'Claimed',
+                        ];
+                    })
+                    ->all();
             }
 
             $notifications = [];

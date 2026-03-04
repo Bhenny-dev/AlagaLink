@@ -75,6 +75,7 @@ interface AppContextType {
   updateUser: (user: UserProfile) => void;
   updateProgramRequest: (updatedReq: ProgramAvailment) => void;
   addProgramRequest: (newReq: ProgramAvailment) => void;
+  reportMissingProgramRequest: (requestId: string) => void;
   addCustomSection: (label: string) => void;
   removeCustomSection: (id: string) => void;
   markNotificationRead: (id: string) => void;
@@ -312,6 +313,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialLaravelUs
         if (currentUser?.id === saved.id) {
           setCurrentUser(saved);
         }
+
+        const createdNotifs = response?.data?.notifications as Notification[] | undefined;
+        if (Array.isArray(createdNotifs) && createdNotifs.length > 0) {
+          setNotifications(prev => {
+            const seen = new Set(prev.map(n => n.id));
+            const toAdd = createdNotifs.filter(n => n?.id && !seen.has(n.id));
+            return toAdd.length ? [...toAdd, ...prev] : prev;
+          });
+        }
       })
       .catch((e) => {
         console.error('Failed to persist updated user:', e);
@@ -362,6 +372,75 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialLaravelUs
       })
       .catch((e) => {
         console.error('Failed to persist created program request:', e);
+      });
+  };
+
+  const reportMissingProgramRequest = (requestId: string) => {
+    if (!currentUser) return;
+
+    const existing = programRequests.find(r => r.id === requestId);
+    if (!existing) return;
+    if (existing.programType !== 'ID') return;
+    if (existing.userId !== currentUser.id) return;
+    if (existing.status !== 'Claimed') return;
+    if (existing.missingReportedAt) return;
+
+    const optimistic: ProgramAvailment = {
+      ...existing,
+      missingReportedAt: new Date().toISOString(),
+    };
+
+    setProgramRequests(prev => prev.map(r => (r.id === requestId ? optimistic : r)));
+
+    setCurrentUser(prev => {
+      if (!prev) return prev;
+      if (prev.id !== existing.userId) return prev;
+
+      const prevPrograms = Array.isArray(prev.history?.programs) ? prev.history.programs : [];
+      const nextPrograms = prevPrograms.some(p => p.id === requestId)
+        ? prevPrograms.map(p => (p.id === requestId ? optimistic : p))
+        : [...prevPrograms, optimistic];
+
+      return {
+        ...prev,
+        history: {
+          ...prev.history,
+          programs: nextPrograms,
+        },
+      };
+    });
+
+    axios.post('/api/alagalink/program-availments/' + encodeURIComponent(requestId) + '/report-missing', {})
+      .then((response) => {
+        const saved = response?.data?.request as ProgramAvailment | undefined;
+        if (saved?.id) {
+          setProgramRequests(prev => prev.map(r => (r.id === saved.id ? saved : r)));
+
+          setCurrentUser(prev => {
+            if (!prev) return prev;
+            if (prev.id !== saved.userId) return prev;
+            const prevPrograms = Array.isArray(prev.history?.programs) ? prev.history.programs : [];
+            const nextPrograms = prevPrograms.some(p => p.id === saved.id)
+              ? prevPrograms.map(p => (p.id === saved.id ? saved : p))
+              : [...prevPrograms, saved];
+            return {
+              ...prev,
+              history: {
+                ...prev.history,
+                programs: nextPrograms,
+              },
+            };
+          });
+        }
+
+        const createdNotifs = response?.data?.notifications as Notification[] | undefined;
+        if (Array.isArray(createdNotifs) && createdNotifs.length > 0) {
+          setNotifications(prev => [...createdNotifs, ...prev]);
+        }
+      })
+      .catch((e) => {
+        console.error('Failed to report missing card:', e);
+        // Do not rollback optimistic update; user can refresh or retry.
       });
   };
 
@@ -522,6 +601,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialLaravelUs
       directMessages, isDarkMode, globalSearchQuery, globalSearchFilter, searchSignal,
       setGlobalSearchQuery, setGlobalSearchFilter, setSearchSignal, toggleTheme,
       login, loginWithPassword, loginById, logout, addReport, updateReport, addUser, updateUser, updateProgramRequest, addProgramRequest,
+      reportMissingProgramRequest,
       addCustomSection, removeCustomSection, markNotificationRead, clearAllNotifications,
       sendDirectMessage,
       loadDirectThread

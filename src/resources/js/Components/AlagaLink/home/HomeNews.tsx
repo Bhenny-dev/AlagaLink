@@ -24,13 +24,26 @@ const HomeNews: React.FC<HomeNewsProps> = ({ updates = [], onSelect, isAdmin = f
   const [filter, setFilter] = useState<'All' | 'Alerts' | 'Programs' | 'Registry'>('All');
 
   const filteredItems = useMemo(() => {
-    return updates.filter(item => {
-      if (filter === 'All') return true;
-      if (filter === 'Alerts') return item.type === 'Alert' || item.type === 'Urgent';
-      if (filter === 'Programs') return item.type === 'Program' || item.type === 'Service' || item.type === 'Supply';
-      if (filter === 'Registry') return item.type === 'Registry';
-      return true;
-    });
+    const isAlert = (item: UpdateItem) => item.type === 'Alert' || item.type === 'Urgent';
+    const isProgram = (item: UpdateItem) => item.type === 'Program' || item.type === 'Service' || item.type === 'Supply';
+    const getTime = (item: UpdateItem) => {
+      if (typeof item.timestamp === 'number') return item.timestamp;
+      const parsed = Date.parse(item.date);
+      return Number.isFinite(parsed) ? parsed : 0;
+    };
+
+    const base = updates
+      .filter(item => {
+        if (filter === 'All') return isAlert(item) || isProgram(item);
+        if (filter === 'Alerts') return isAlert(item);
+        if (filter === 'Programs') return isProgram(item);
+        if (filter === 'Registry') return item.type === 'Registry';
+        return true;
+      })
+      .slice()
+      .sort((a, b) => getTime(b) - getTime(a));
+
+    return base;
   }, [updates, filter]);
 
   const categories = [
@@ -45,6 +58,8 @@ const HomeNews: React.FC<HomeNewsProps> = ({ updates = [], onSelect, isAdmin = f
       case 'Urgent': return 'text-red-600 dark:text-red-400 font-black';
       case 'Alert': return 'text-alaga-teal font-black';
       case 'Program': return 'text-alaga-blue font-black';
+      case 'Service': return 'text-alaga-blue font-black';
+      case 'Supply': return 'text-alaga-blue font-black';
       case 'Registry': return 'text-purple-600 font-black';
       default: return 'text-gray-500 font-bold';
     }
@@ -75,8 +90,8 @@ const HomeNews: React.FC<HomeNewsProps> = ({ updates = [], onSelect, isAdmin = f
             key={cat.id}
             onClick={() => setFilter(cat.id as 'All' | 'Alerts' | 'Programs' | 'Registry')}
             className={`px-4 py-1 text-[11px] font-black uppercase tracking-widest transition-all ${
-              filter === cat.id 
-                ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' 
+              filter === cat.id
+                ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
                 : 'hover:underline opacity-40'
             }`}
           >
@@ -88,10 +103,10 @@ const HomeNews: React.FC<HomeNewsProps> = ({ updates = [], onSelect, isAdmin = f
       {/* Newspaper Grid Layout */}
       {filteredItems.length > 0 ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-0">
-          
+
           {/* LEFT COLUMN: Feature Story (Span 7) */}
           <div className="lg:col-span-7 lg:pr-8 lg:border-r border-gray-200 dark:border-white/10 space-y-6">
-            <div 
+            <div
               className="group cursor-pointer space-y-4"
               onClick={() => onSelect(filteredItems[0])}
             >
@@ -121,16 +136,16 @@ const HomeNews: React.FC<HomeNewsProps> = ({ updates = [], onSelect, isAdmin = f
 
           {/* RIGHT COLUMN: Secondary Stories (Span 5) */}
           <div className="lg:col-span-5 lg:pl-8 space-y-8">
-            {filteredItems.slice(1, 4).map((item, i) => (
-              <div 
-                key={item.id} 
+            {filteredItems.slice(1, 5).map((item, i) => (
+              <div
+                key={item.id}
                 onClick={() => onSelect(item)}
-                className={`group cursor-pointer space-y-3 pb-8 ${i !== 2 ? 'border-b border-gray-100 dark:border-white/5' : ''}`}
+                className={`group cursor-pointer space-y-3 pb-8 ${i !== 3 ? 'border-b border-gray-100 dark:border-white/5' : ''}`}
               >
                 <div className="flex gap-4">
                   <div className="flex-1 space-y-2">
                     <span className={`text-[9px] uppercase tracking-widest ${getBadgeStyle(item.type || 'Normal')}`}>
-                      {item.type || 'Update'}
+                      {item.type || 'Update'} • {item.date}
                     </span>
                     <h5 className="text-xl font-black leading-[1.1] tracking-tight group-hover:text-alaga-blue transition-colors">
                       {item.title}
@@ -151,30 +166,32 @@ const HomeNews: React.FC<HomeNewsProps> = ({ updates = [], onSelect, isAdmin = f
             ))}
           </div>
 
-          {/* BOTTOM ROW: Footer Snippets (Span 12) */}
-          {filteredItems.length > 4 && (
+          {/* BOTTOM ROW: Remaining Stories (Span 12) */}
+          {filteredItems.length > 5 && (
             <div className="lg:col-span-12 mt-12 pt-12 border-t-4 border-double border-gray-900 dark:border-white/40">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
-                {filteredItems.slice(4, 8).map(item => (
-                  <div 
-                    key={item.id} 
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                {filteredItems.slice(5).map(item => (
+                  <div
+                    key={item.id}
                     onClick={() => onSelect(item)}
-                    className="group cursor-pointer space-y-3"
+                    className="group cursor-pointer border border-gray-100 dark:border-white/5 overflow-hidden"
                   >
-                    <div className="aspect-video w-full overflow-hidden grayscale group-hover:grayscale-0 transition-all border border-gray-100 dark:border-white/5">
+                    <div className="aspect-video w-full overflow-hidden grayscale group-hover:grayscale-0 transition-all">
                       {item.photoUrl ? (
-                        <Image src={item.photoUrl} width={320} height={180} className="w-full h-full object-cover" alt={item.title} />
+                        <Image src={item.photoUrl} width={640} height={360} className="w-full h-full object-cover" alt={item.title} />
                       ) : (
                         <div className="w-full h-full bg-gray-100" />
                       )}
                     </div>
-                    <div className="space-y-1">
-                      <p className={`text-[8px] uppercase tracking-[0.2em] ${getBadgeStyle(item.type || 'Normal')}`}>{item.category}</p>
-                      <h6 className="font-black text-sm leading-tight group-hover:text-alaga-blue transition-colors uppercase">
+                    <div className="p-5 space-y-2">
+                      <span className={`text-[9px] uppercase tracking-widest ${getBadgeStyle(item.type || 'Normal')}`}>
+                        {item.type || 'Update'} • {item.date}
+                      </span>
+                      <h6 className="font-black leading-tight tracking-tight text-gray-900 dark:text-white group-hover:text-alaga-blue transition-colors line-clamp-2">
                         {item.title}
                       </h6>
-                      <p className="text-[11px] opacity-60 line-clamp-3 leading-relaxed font-medium italic">
-                        &quot;{item.summary}&quot;
+                      <p className="text-[12px] opacity-70 font-medium leading-relaxed line-clamp-3">
+                        {item.summary}
                       </p>
                     </div>
                   </div>

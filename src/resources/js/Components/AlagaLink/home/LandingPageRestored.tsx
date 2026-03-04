@@ -167,8 +167,17 @@ const LandingPage: React.FC<{ initialSection?: string | null; allowAdminRegistra
       <section id="home" className="relative min-h-screen flex flex-col items-center justify-center p-6 text-center overflow-hidden">
         <div className="relative z-10 max-w-4xl space-y-12">
           <div className="space-y-4">
-            <div className="w-24 h-24 bg-alaga-blue rounded-[32px] flex items-center justify-center mx-auto shadow-2xl inner-glow animate-float">
-              <i className="fa-solid fa-hands-holding-child text-white text-5xl"></i>
+            <div className="w-28 h-28 md:w-32 md:h-32 mx-auto animate-float">
+              <div className="w-full h-full bg-white dark:bg-alaga-charcoal rounded-[32px] shadow-2xl border border-gray-100 dark:border-white/10 inner-glow flex items-center justify-center p-4">
+                <Image
+                  src="/images/Alagalink_Logo/AlagaLink_Logo.png"
+                  alt="AlagaLink"
+                  width={160}
+                  height={160}
+                  className="w-full h-full object-contain"
+                  priority
+                />
+              </div>
             </div>
             <h1 className="text-6xl md:text-8xl font-black text-3d-heavy tracking-tighter leading-none">Alaga<span className="text-alaga-blue">Link</span></h1>
             <p className="text-sm md:text-xl font-black uppercase tracking-[0.4em] opacity-40">La Trinidad PWD/CWD Information System</p>

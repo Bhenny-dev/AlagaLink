@@ -32,13 +32,17 @@ class ProgramAvailmentController extends Controller
             'userId' => ['required', 'string', 'max:128'],
             'programType' => ['required', Rule::in(['ID', 'Device', 'Medical', 'PhilHealth', 'Livelihood'])],
             'title' => ['required', 'string', 'max:255'],
-            'status' => ['nullable', Rule::in(['Pending', 'Approved', 'Rejected', 'Completed', 'Ready for Claiming', 'Out for Delivery'])],
+            'status' => ['nullable', Rule::in(['Pending', 'Approved', 'Rejected', 'Completed', 'Ready for Claiming', 'Out for Delivery', 'Claimed'])],
             'dateApplied' => ['required', 'date'],
             'details' => ['nullable', 'string', 'max:4000'],
             'paymentStatus' => ['nullable', Rule::in(['Unpaid', 'Paid'])],
             'paymentMethod' => ['nullable', Rule::in(['Online', 'Upon Claiming'])],
             'issuanceDate' => ['nullable', 'string', 'max:64'],
             'issuanceLocation' => ['nullable', 'string', 'max:255'],
+            'readyForClaimingAt' => ['nullable', 'string', 'max:64'],
+            'claimedAt' => ['nullable', 'string', 'max:64'],
+            'claimedLocation' => ['nullable', 'string', 'max:255'],
+            'missingReportedAt' => ['nullable', 'string', 'max:64'],
             'adminNarrative' => ['nullable', 'array'],
             'philhealthConsent' => ['nullable', 'boolean'],
             'deliveryMethod' => ['nullable', Rule::in(['Pickup', 'Delivery'])],
@@ -179,10 +183,14 @@ class ProgramAvailmentController extends Controller
         }
 
         $data = $request->validate([
-            'status' => ['required', Rule::in(['Pending', 'Approved', 'Rejected', 'Completed', 'Ready for Claiming', 'Out for Delivery'])],
+            'status' => ['required', Rule::in(['Pending', 'Approved', 'Rejected', 'Completed', 'Ready for Claiming', 'Out for Delivery', 'Claimed'])],
             'adminNarrative' => ['nullable', 'array'],
             'issuanceDate' => ['nullable', 'string', 'max:64'],
             'issuanceLocation' => ['nullable', 'string', 'max:255'],
+            'readyForClaimingAt' => ['nullable', 'string', 'max:64'],
+            'claimedAt' => ['nullable', 'string', 'max:64'],
+            'claimedLocation' => ['nullable', 'string', 'max:255'],
+            'missingReportedAt' => ['nullable', 'string', 'max:64'],
             'deliveryMethod' => ['nullable', Rule::in(['Pickup', 'Delivery'])],
             'deliveryDate' => ['nullable', 'string', 'max:64'],
             'deliveryCourier' => ['nullable', 'string', 'max:255'],
@@ -212,7 +220,11 @@ class ProgramAvailmentController extends Controller
             'userId' => (string) $existing->user_id,
             'title' => "Application {$data['status']}",
             'message' => "Your request for {$existing->title} has been updated to {$data['status']}.",
-            'type' => in_array((string) $data['status'], ['Approved', 'Completed'], true) ? 'Success' : ((string) $data['status'] === 'Rejected' ? 'Urgent' : 'Info'),
+            'type' => in_array((string) $data['status'], ['Approved', 'Completed', 'Claimed'], true)
+                ? 'Success'
+                : (((string) $data['status'] === 'Rejected')
+                    ? 'Urgent'
+                    : 'Info'),
             'date' => now()->toISOString(),
             'isRead' => false,
             'link' => "programs:requests:{$existing->id}",
@@ -235,6 +247,151 @@ class ProgramAvailmentController extends Controller
 
         return response()->json([
             'request' => $existing->data,
+        ]);
+    }
+
+    public function reportMissing(Request $request, string $id): JsonResponse
+    {
+        $actor = $request->user();
+        if (! $actor) {
+            throw ValidationException::withMessages([
+                'auth' => ['Unauthenticated.'],
+            ]);
+        }
+
+        $actorRole = (string) ($actor->alagalink_role ?? 'User');
+        $isAdmin = in_array($actorRole, ['Admin', 'SuperAdmin'], true);
+        $actorId = (string) ($actor->alagalink_id ?? '');
+
+        $existing = AlagaLinkProgramAvailment::query()->where('id', $id)->first();
+        if (! $existing) {
+            throw ValidationException::withMessages([
+                'id' => ['Request not found.'],
+            ]);
+        }
+
+        if ((string) $existing->program_type !== 'ID') {
+            throw ValidationException::withMessages([
+                'programType' => ['Missing-card reporting is only available for ID issuance.'],
+            ]);
+        }
+
+        if (! $isAdmin) {
+            if ($actorId === '' || $actorId !== (string) $existing->user_id) {
+                throw ValidationException::withMessages([
+                    'auth' => ['Forbidden.'],
+                ]);
+            }
+        }
+
+        if ((string) $existing->status !== 'Claimed') {
+            throw ValidationException::withMessages([
+                'status' => ['Missing-card reporting is only allowed after the physical card is claimed.'],
+            ]);
+        }
+
+        $existingPayload = is_array($existing->data) ? $existing->data : [];
+
+        if (array_key_exists('missingReportedAt', $existingPayload) && $existingPayload['missingReportedAt']) {
+            return response()->json([
+                'request' => $existing->data,
+                'notifications' => [],
+            ]);
+        }
+
+        $payload = [
+            ...$existingPayload,
+            'missingReportedAt' => now()->toISOString(),
+            'id' => $existing->id,
+            'userId' => (string) $existing->user_id,
+            'programType' => (string) $existing->program_type,
+            'title' => (string) $existing->title,
+            'dateApplied' => $existingPayload['dateApplied'] ?? optional($existing->date_applied)->toDateString() ?? null,
+        ];
+
+        $existing->forceFill([
+            'data' => $payload,
+        ])->save();
+
+        $notifications = [];
+
+        // Notify the requesting user.
+        $userNotifId = 'notif-'.(string) Str::ulid();
+        $userNotifPayload = [
+            'id' => $userNotifId,
+            'userId' => (string) $existing->user_id,
+            'title' => 'Missing Card Report Submitted',
+            'message' => 'Your report has been received. Please wait for staff validation and replacement issuance instructions.',
+            'type' => 'Warning',
+            'date' => now()->toISOString(),
+            'isRead' => false,
+            'link' => "programs:requests:{$existing->id}",
+            'programType' => (string) $existing->program_type,
+        ];
+
+        AlagaLinkNotification::query()->create([
+            'id' => $userNotifId,
+            'user_id' => (string) $existing->user_id,
+            'target_role' => null,
+            'title' => (string) $userNotifPayload['title'],
+            'message' => (string) $userNotifPayload['message'],
+            'type' => (string) $userNotifPayload['type'],
+            'date' => now(),
+            'is_read' => false,
+            'link' => (string) $userNotifPayload['link'],
+            'program_type' => (string) $existing->program_type,
+            'data' => $userNotifPayload,
+        ]);
+
+        // Notify admins (per-user so read-state is per admin).
+        $adminUsers = User::query()
+            ->whereIn('alagalink_role', ['Admin', 'SuperAdmin'])
+            ->whereNotNull('alagalink_id')
+            ->get(['alagalink_id']);
+
+        $actorAdminNotification = null;
+
+        foreach ($adminUsers as $adminUser) {
+            $adminNotifId = 'notif-'.(string) Str::ulid();
+            $adminNotifPayload = [
+                'id' => $adminNotifId,
+                'userId' => (string) $adminUser->alagalink_id,
+                'title' => 'Missing Card Reported',
+                'message' => 'A member has reported a missing physical PWD ID card. Validation and replacement issuance is required.',
+                'type' => 'Warning',
+                'date' => now()->toISOString(),
+                'isRead' => false,
+                'link' => "programs:requests:{$existing->id}",
+                'programType' => (string) $existing->program_type,
+            ];
+
+            AlagaLinkNotification::query()->create([
+                'id' => $adminNotifId,
+                'user_id' => (string) $adminUser->alagalink_id,
+                'target_role' => null,
+                'title' => (string) $adminNotifPayload['title'],
+                'message' => (string) $adminNotifPayload['message'],
+                'type' => (string) $adminNotifPayload['type'],
+                'date' => now(),
+                'is_read' => false,
+                'link' => (string) $adminNotifPayload['link'],
+                'program_type' => (string) $existing->program_type,
+                'data' => $adminNotifPayload,
+            ]);
+
+            if ($actorId !== '' && (string) $adminUser->alagalink_id === $actorId) {
+                $actorAdminNotification = $adminNotifPayload;
+            }
+        }
+
+        $notifications = array_values(array_filter([
+            ((string) $existing->user_id === $actorId) ? $userNotifPayload : null,
+            $actorAdminNotification,
+        ]));
+
+        return response()->json([
+            'request' => $existing->data,
+            'notifications' => $notifications,
         ]);
     }
 }
