@@ -35,10 +35,36 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     directMessages,
     sendDirectMessage,
     loadDirectThread,
+    markDirectThreadRead,
     users,
   } = useAppContext();
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
+  const lastIncomingIdRef = useRef<string | null>(null);
+
+  const threadInfo = useMemo(() => {
+    if (!targetUser || !currentUser) return null;
+
+    // Determine which thread to use. For ADMIN -> PWD replies, we consolidate into OFFICE thread.
+    let threadKey: string;
+    let isOfficeThread = false;
+
+    const targetIsOffice = targetUser.id === OFFICE_ID;
+    const targetIsUser = targetUser?.role === 'User';
+
+    if (targetIsOffice) {
+      threadKey = [currentUser.id, OFFICE_ID].sort().join('_');
+      isOfficeThread = true;
+    } else if (currentUser.role !== 'User' && targetIsUser) {
+      // Admin viewing a user's thread: show OFFICE <-> user thread
+      threadKey = [OFFICE_ID, targetUser.id].sort().join('_');
+      isOfficeThread = true;
+    } else {
+      threadKey = [currentUser.id, targetUser.id].sort().join('_');
+    }
+
+    return { threadKey, isOfficeThread };
+  }, [targetUser, currentUser]);
 
   const responsiveStyle = useMemo(() => {
     if (isEmbedded) return { position: 'relative' as const, width: '100%', height: '100%', borderRadius: 0 };
@@ -84,35 +110,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   }, [anchorPosition, isEmbedded]);
 
   const displayMessages = useMemo(() => {
-    if (!targetUser || !currentUser) {
+    if (!targetUser || !currentUser || !threadInfo) {
       return [];
     }
 
-    // Determine which thread to use. For ADMIN -> PWD replies, we consolidate into OFFICE thread.
-    let threadKey: string;
-    let isOfficeThread = false;
-
-    const targetIsOffice = targetUser.id === OFFICE_ID;
-    const targetIsUser = targetUser?.role === 'User';
-
-    if (targetIsOffice) {
-      threadKey = [currentUser.id, OFFICE_ID].sort().join('_');
-      isOfficeThread = true;
-    } else if (currentUser.role !== 'User' && targetIsUser) {
-      // Admin viewing a user's thread: show OFFICE <-> user thread
-      threadKey = [OFFICE_ID, targetUser.id].sort().join('_');
-      isOfficeThread = true;
-    } else {
-      threadKey = [currentUser.id, targetUser.id].sort().join('_');
-    }
-
-    const realMessages = directMessages[threadKey] || [];
+    const realMessages = directMessages[threadInfo.threadKey] || [];
 
     const converted: ChatMessage[] = realMessages.map(m => {
       const isFromCurrent = m.senderId === currentUser.id;
 
       // If this is an office thread and the viewer is a regular user, consolidate staff messages into 'PDAO Office'
-      if (isOfficeThread && currentUser.role === 'User' && !isFromCurrent) {
+      if (threadInfo.isOfficeThread && currentUser.role === 'User' && !isFromCurrent) {
         return {
           role: 'bot' as const,
           text: m.text,
@@ -133,7 +141,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     });
 
     return converted;
-  }, [targetUser, currentUser, directMessages, users]);
+  }, [targetUser, currentUser, directMessages, users, threadInfo]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight);
@@ -142,26 +150,35 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   useEffect(() => {
     if (!targetUser || !currentUser) return;
 
+    // Clear unread state as soon as the thread is opened.
+    markDirectThreadRead(targetUser.id);
+  }, [targetUser?.id, currentUser?.id, markDirectThreadRead]);
+
+  useEffect(() => {
+    if (!targetUser || !currentUser || !threadInfo) return;
+
+    // If a new incoming message arrives while this thread is open, mark it read.
+    const msgs = directMessages[threadInfo.threadKey] || [];
+    const last = msgs.length ? msgs[msgs.length - 1] : null;
+    if (!last) return;
+
+    if (last.senderId === currentUser.id) return;
+    if (lastIncomingIdRef.current === last.id) return;
+
+    lastIncomingIdRef.current = last.id;
+    markDirectThreadRead(targetUser.id);
+  }, [directMessages, threadInfo, targetUser, currentUser, markDirectThreadRead]);
+
+  useEffect(() => {
+    if (!targetUser || !currentUser || !threadInfo) return;
+
     let isCancelled = false;
     let intervalId: number | undefined;
 
     const poll = async () => {
       if (isCancelled) return;
 
-      // Compute thread key the same way as displayMessages does.
-      let threadKey: string;
-      const targetIsOffice = targetUser.id === OFFICE_ID;
-      const targetIsUser = targetUser?.role === 'User';
-
-      if (targetIsOffice) {
-        threadKey = [currentUser.id, OFFICE_ID].sort().join('_');
-      } else if (currentUser.role !== 'User' && targetIsUser) {
-        threadKey = [OFFICE_ID, targetUser.id].sort().join('_');
-      } else {
-        threadKey = [currentUser.id, targetUser.id].sort().join('_');
-      }
-
-      const existing = directMessages[threadKey] || [];
+      const existing = directMessages[threadInfo.threadKey] || [];
       const lastTimestamp = existing.length ? existing[existing.length - 1].timestamp : undefined;
 
       await loadDirectThread(targetUser.id, lastTimestamp);
@@ -174,7 +191,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       isCancelled = true;
       if (intervalId) window.clearInterval(intervalId);
     };
-  }, [targetUser, currentUser, loadDirectThread, directMessages]);
+  }, [targetUser, currentUser, loadDirectThread, directMessages, threadInfo]);
 
   const handleSend = async () => {
     if (!input.trim()) return;

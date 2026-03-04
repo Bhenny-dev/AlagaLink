@@ -34,7 +34,9 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::middleware('auth')->prefix('api')->group(function () {
+    Route::get('/direct-messages/unread-summary', [DirectMessageController::class, 'unreadSummary']);
     Route::get('/direct-messages/thread/{peerId}', [DirectMessageController::class, 'thread']);
+    Route::post('/direct-messages/thread/{peerId}/mark-read', [DirectMessageController::class, 'markRead']);
     Route::post('/direct-messages', [DirectMessageController::class, 'store']);
 
     Route::post('/alagalink/users', [UserProfileController::class, 'store']);

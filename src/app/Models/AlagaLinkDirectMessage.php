@@ -19,9 +19,11 @@ class AlagaLinkDirectMessage extends Model
         'recipient_id',
         'body',
         'meta',
+        'read_at',
     ];
 
     protected $casts = [
         'meta' => 'array',
+        'read_at' => 'datetime',
     ];
 }

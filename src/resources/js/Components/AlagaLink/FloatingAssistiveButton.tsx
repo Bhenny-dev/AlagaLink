@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import ChatWindow from './ChatWindow';
 import { useAppContext } from '@/Providers/AlagaLink/AppContext';
@@ -9,7 +9,14 @@ import { UserProfile } from '@/Providers/AlagaLink/types';
 import { OFFICE_ID } from '@/Providers/AlagaLink/constants';
 
 const FloatingAssistiveButton: React.FC = () => {
-  const { currentUser, users, directMessages } = useAppContext();
+  const {
+    currentUser,
+    users,
+    directMessages,
+    directUnreadTotal,
+    directUnreadByPeer,
+    directLastMessageAtByPeer,
+  } = useAppContext();
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isOpen, setIsOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -147,6 +154,30 @@ const FloatingAssistiveButton: React.FC = () => {
     return matchesTab && !isSelf && matchesSearch;
   });
 
+  const sortedUsers = useMemo(() => {
+    const parseTs = (ts?: string | null) => {
+      if (!ts) return 0;
+      const v = Date.parse(ts);
+      return Number.isFinite(v) ? v : 0;
+    };
+
+    return [...filteredUsers].sort((a, b) => {
+      const aUnread = directUnreadByPeer[a.id] || 0;
+      const bUnread = directUnreadByPeer[b.id] || 0;
+
+      if ((aUnread > 0) !== (bUnread > 0)) return aUnread > 0 ? -1 : 1;
+      if (aUnread !== bUnread) return bUnread - aUnread;
+
+      const aLast = parseTs(directLastMessageAtByPeer[a.id]);
+      const bLast = parseTs(directLastMessageAtByPeer[b.id]);
+      if (aLast !== bLast) return bLast - aLast;
+
+      const aName = `${a.firstName} ${a.lastName}`.toLowerCase();
+      const bName = `${b.firstName} ${b.lastName}`.toLowerCase();
+      return aName.localeCompare(bName);
+    });
+  }, [filteredUsers, directUnreadByPeer, directLastMessageAtByPeer]);
+
   return (
     <>
       {/* THE FLOATING BUTTON */}
@@ -181,6 +212,12 @@ const FloatingAssistiveButton: React.FC = () => {
           >
             <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-black/20 pointer-events-none"></div>
             <i className={`fa-solid ${(isOpen || showAdminHub) ? 'fa-xmark' : isAdmin ? 'fa-envelopes-bulk' : 'fa-comment-dots'} text-2xl relative z-10 drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]`}></i>
+
+            {directUnreadTotal > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center border-2 border-white/70">
+                {directUnreadTotal > 99 ? '99+' : directUnreadTotal}
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -267,8 +304,9 @@ const FloatingAssistiveButton: React.FC = () => {
               <div className="flex-1 px-4 pb-4 overflow-hidden flex flex-col">
                 <div className="flex-1 bg-white dark:bg-alaga-navy/20 rounded-[32px] border border-gray-100 dark:border-white/5 overflow-hidden flex flex-col shadow-inner">
                   <div className="flex-1 overflow-y-auto no-scrollbar py-2">
-                    {filteredUsers.length > 0 ? filteredUsers.map((u) => {
+                    {sortedUsers.length > 0 ? sortedUsers.map((u) => {
                       const isSelected = activeChatUser?.id === u.id;
+                      const unreadCount = directUnreadByPeer[u.id] || 0;
                       return (
                         <button
                           key={u.id}
@@ -286,13 +324,29 @@ const FloatingAssistiveButton: React.FC = () => {
                               ) : (
                                 <div className="w-10 h-10 rounded-xl bg-gray-100" />
                               )}
+
+                              {unreadCount > 0 && (
+                                <span className={`absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-500 border-2 ${isSelected ? 'border-white/70' : 'border-white dark:border-alaga-charcoal'}`}></span>
+                              )}
                           </div>
                           <div className="text-left flex-1 min-w-0">
                             <p className={`font-black text-xs truncate ${isSelected ? 'text-white' : ''}`}>{u.firstName} {u.lastName}</p>
                             <p className={`text-[8px] uppercase font-black tracking-tighter truncate ${isSelected ? 'text-white/60' : 'opacity-40'}`}>
                               {u.disabilityCategory?.split(' ')[0] || u.role} • {u.address.split(',')[0]}
                             </p>
+
+                            {unreadCount > 0 && (
+                              <p className={`mt-1 text-[9px] font-black ${isSelected ? 'text-white/90' : 'text-red-500'} truncate`}>
+                                {unreadCount} new message{unreadCount === 1 ? '' : 's'}
+                              </p>
+                            )}
                           </div>
+
+                          {unreadCount > 0 && (
+                            <div className={`shrink-0 px-2 py-1 rounded-full text-[9px] font-black ${isSelected ? 'bg-white/15 text-white' : 'bg-red-500 text-white'}`}>
+                              {unreadCount}
+                            </div>
+                          )}
                           {isSelected && <i className="fa-solid fa-chevron-right text-[10px] opacity-40"></i>}
                         </button>
                       );

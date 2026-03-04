@@ -58,6 +58,17 @@ export interface DirectMessage {
   };
 }
 
+export interface DirectUnreadPeerSummary {
+  peerId: string;
+  unreadCount: number;
+  lastMessageAt?: string | null;
+}
+
+export interface DirectUnreadSummary {
+  totalUnread: number;
+  peers: DirectUnreadPeerSummary[];
+}
+
 export interface Notification {
   id: string;
   userId?: string; // If present, targeted to specific user

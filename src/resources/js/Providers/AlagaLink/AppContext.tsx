@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { router } from '@inertiajs/react';
 import axios from 'axios';
 import {
@@ -10,6 +10,7 @@ import {
   FormSection,
   ProgramAvailment,
   DirectMessage,
+  DirectUnreadSummary,
   Notification,
   AssistiveDevice,
   MedicalService,
@@ -57,6 +58,9 @@ interface AppContextType {
   about: AboutInfo | null;
   customSections: FormSection[];
   directMessages: Record<string, DirectMessage[]>;
+  directUnreadTotal: number;
+  directUnreadByPeer: Record<string, number>;
+  directLastMessageAtByPeer: Record<string, string | null>;
   isDarkMode: boolean;
   globalSearchQuery: string;
   globalSearchFilter: string;
@@ -82,6 +86,7 @@ interface AppContextType {
   clearAllNotifications: () => void;
   sendDirectMessage: (toUserId: string, text: string) => void;
   loadDirectThread: (peerId: string, afterTimestamp?: string) => Promise<void>;
+  markDirectThreadRead: (peerId: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -155,6 +160,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialLaravelUs
   const [about] = useState<AboutInfo | null>(seededAbout ?? null);
   const [customSections, setCustomSections] = useState<FormSection[]>(seededCustomSections);
   const [directMessages, setDirectMessages] = useState<Record<string, DirectMessage[]>>({});
+  const [directUnreadTotal, setDirectUnreadTotal] = useState(0);
+  const [directUnreadByPeer, setDirectUnreadByPeer] = useState<Record<string, number>>({});
+  const [directLastMessageAtByPeer, setDirectLastMessageAtByPeer] = useState<Record<string, string | null>>({});
   const [isDarkMode, setIsDarkMode] = useState(() => {
     try {
       return window.localStorage.getItem('alagalink:darkMode') === '1';
@@ -162,6 +170,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialLaravelUs
       return false;
     }
   });
+
+  const recordsEqual = (a: Record<string, unknown>, b: Record<string, unknown>) => {
+    const aKeys = Object.keys(a);
+    const bKeys = Object.keys(b);
+    if (aKeys.length !== bKeys.length) return false;
+    for (const k of aKeys) {
+      if (a[k] !== b[k]) return false;
+    }
+    return true;
+  };
 
   // Keep server-seeded data in sync across Inertia navigations.
   useEffect(() => {
@@ -510,6 +528,80 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialLaravelUs
     return { threadKey: [currentUser.id, peerId].sort().join('_') };
   };
 
+  const refreshDirectUnreadSummary = useCallback(async () => {
+    if (!currentUser) return;
+
+    try {
+      const response = await axios.get('/api/direct-messages/unread-summary');
+      const data = (response?.data ?? null) as DirectUnreadSummary | null;
+      if (!data || typeof data.totalUnread !== 'number' || !Array.isArray(data.peers)) return;
+
+      const nextByPeer: Record<string, number> = {};
+      const nextLastByPeer: Record<string, string | null> = {};
+
+      for (const p of data.peers) {
+        if (!p || typeof p.peerId !== 'string') continue;
+        nextByPeer[p.peerId] = typeof p.unreadCount === 'number' ? p.unreadCount : 0;
+        nextLastByPeer[p.peerId] = (typeof p.lastMessageAt === 'string' || p.lastMessageAt === null)
+          ? (p.lastMessageAt ?? null)
+          : null;
+      }
+
+      setDirectUnreadTotal(prev => (prev === data.totalUnread ? prev : data.totalUnread));
+      setDirectUnreadByPeer(prev => (recordsEqual(prev, nextByPeer) ? prev : nextByPeer));
+      setDirectLastMessageAtByPeer(prev => (recordsEqual(prev, nextLastByPeer) ? prev : nextLastByPeer));
+    } catch (e) {
+      console.error('Failed to load direct unread summary:', e);
+    }
+  }, [currentUser]);
+
+  const markDirectThreadRead = useCallback(async (peerId: string) => {
+    if (!currentUser) return;
+    if (!peerId || typeof peerId !== 'string') return;
+
+    const prevCount = directUnreadByPeer[peerId] || 0;
+
+    if (prevCount > 0) {
+      // Optimistically clear the peer badge immediately.
+      setDirectUnreadByPeer(prev => ({ ...prev, [peerId]: 0 }));
+      setDirectUnreadTotal(prev => Math.max(0, prev - prevCount));
+    }
+
+    try {
+      await axios.post('/api/direct-messages/thread/' + encodeURIComponent(peerId) + '/mark-read', {});
+    } catch (e) {
+      console.error('Failed to mark direct thread read:', e);
+    } finally {
+      // Reconcile with the server in case multiple peers changed.
+      refreshDirectUnreadSummary();
+    }
+  }, [currentUser, directUnreadByPeer, refreshDirectUnreadSummary]);
+
+  useEffect(() => {
+    if (!currentUser) {
+      setDirectUnreadTotal(0);
+      setDirectUnreadByPeer({});
+      setDirectLastMessageAtByPeer({});
+      return;
+    }
+
+    let cancelled = false;
+    let intervalId: number | undefined;
+
+    const poll = async () => {
+      if (cancelled) return;
+      await refreshDirectUnreadSummary();
+    };
+
+    poll();
+    intervalId = window.setInterval(poll, 3000);
+
+    return () => {
+      cancelled = true;
+      if (intervalId) window.clearInterval(intervalId);
+    };
+  }, [currentUser?.id, refreshDirectUnreadSummary]);
+
   const loadDirectThread = async (peerId: string, afterTimestamp?: string) => {
     if (!currentUser) return;
     const computed = threadKeyFor(peerId);
@@ -598,13 +690,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialLaravelUs
       currentUser, users, reports, programRequests, notifications: userNotifications,
       devices, medicalServices, livelihoodPrograms, updates, about,
       customSections,
-      directMessages, isDarkMode, globalSearchQuery, globalSearchFilter, searchSignal,
+      directMessages,
+      directUnreadTotal, directUnreadByPeer, directLastMessageAtByPeer,
+      isDarkMode, globalSearchQuery, globalSearchFilter, searchSignal,
       setGlobalSearchQuery, setGlobalSearchFilter, setSearchSignal, toggleTheme,
       login, loginWithPassword, loginById, logout, addReport, updateReport, addUser, updateUser, updateProgramRequest, addProgramRequest,
       reportMissingProgramRequest,
       addCustomSection, removeCustomSection, markNotificationRead, clearAllNotifications,
       sendDirectMessage,
-      loadDirectThread
+      loadDirectThread,
+      markDirectThreadRead
     }}>
       {children}
     </AppContext.Provider>
