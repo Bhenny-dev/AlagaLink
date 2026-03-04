@@ -241,13 +241,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode; initialLaravelUs
     setSearchSignal(null);
 
     // Same-origin, server-backed logout.
-    // With XSRF-TOKEN unencrypted, axios/Inertia will include X-XSRF-TOKEN automatically.
-    router.post('/logout', {}, {
-      preserveState: false,
-      onFinish: () => {
-        window.location.href = '/';
+    // Use fetch(keepalive) so the POST has a chance to complete even if we navigate away.
+    const csrfToken = document.head.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    const body = new URLSearchParams();
+    if (csrfToken) body.set('_token', csrfToken);
+
+    const redirectHome = () => {
+      window.location.href = '/';
+    };
+
+    // Always attempt to logout server-side; if it fails, still redirect.
+    fetch('/logout', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
       },
-    });
+      body: body.toString(),
+      keepalive: true,
+    })
+      .catch(() => {
+        // ignore
+      })
+      .finally(() => {
+        redirectHome();
+      });
   };
 
   const addReport = (report: LostReport) => {
