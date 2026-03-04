@@ -40,9 +40,10 @@ class AuthenticatedSessionController extends Controller
         $role = $user?->alagalink_role;
         $isAdmin = $role === 'Admin' || $role === 'SuperAdmin';
 
-        $defaultRedirect = $isAdmin
-            ? '/?section=admin-register'
-            : route('dashboard', absolute: false);
+        // Land in the authenticated app after login.
+        // Avoid redirecting to landing-page UI sections (e.g. ?section=admin-register)
+        // because that re-opens registration modals on refresh and causes confusing UX.
+        $defaultRedirect = route('dashboard', absolute: false);
 
         return redirect()->intended($defaultRedirect)->setStatusCode(303);
     }

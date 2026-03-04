@@ -91,6 +91,9 @@ export default function AuthenticatedLayout({ header, children }) {
                                             href={route('logout', {}, false)}
                                             method="post"
                                             as="button"
+                                            onFinish={() => {
+                                                window.location.href = '/';
+                                            }}
                                         >
                                             Log Out
                                         </Dropdown.Link>
@@ -195,6 +198,9 @@ export default function AuthenticatedLayout({ header, children }) {
                                 method="post"
                                 href={route('logout', {}, false)}
                                 as="button"
+                                onFinish={() => {
+                                    window.location.href = '/';
+                                }}
                             >
                                 Log Out
                             </ResponsiveNavLink>

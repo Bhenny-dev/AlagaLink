@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import Image from 'next/image';
-import { useForm } from '@inertiajs/react';
+import { router, useForm } from '@inertiajs/react';
 import { useAppContext } from '@/Providers/AlagaLink/AppContext';
 import { AssistiveDevice, DisabilityCategory, MedicalService, LivelihoodProgram, ProgramAvailment, UserProfile, FamilyMember } from '@/Providers/AlagaLink/types';
 import CommunityVigilCarousel from '../lost-found/CommunityVigilCarousel';
@@ -31,6 +31,7 @@ const LandingPage: React.FC<{ initialSection?: string | null; allowAdminRegistra
   const [showLoginPopover, setShowLoginPopover] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [showAdminRegistrationModal, setShowAdminRegistrationModal] = useState(false);
+  const [showPublicRegistrationModal, setShowPublicRegistrationModal] = useState(false);
 
   const programsRef = useRef<HTMLDivElement>(null);
   const missingRef = useRef<HTMLDivElement>(null);
@@ -66,6 +67,8 @@ const LandingPage: React.FC<{ initialSection?: string | null; allowAdminRegistra
     e.preventDefault();
     setLoginError('');
     loginForm.post(route('login', {}, false), {
+      preserveScroll: true,
+      preserveState: true,
       onSuccess: () => {
         setShowLoginPopover(false);
       },
@@ -75,10 +78,74 @@ const LandingPage: React.FC<{ initialSection?: string | null; allowAdminRegistra
           (typeof errors.password === 'string' && errors.password) ||
           'Login failed. Please check your credentials and try again.';
         setLoginError(message);
+
+        // Keep the user anchored to the login section.
+        // (Some auth failure flows can trigger an Inertia re-render that resets scroll.)
+        scrollTo(joinRef);
       },
       onFinish: () => {
         loginForm.reset('password');
       },
+    });
+  };
+
+  const extractFirstError = (errors: Record<string, unknown>): string => {
+    for (const value of Object.values(errors)) {
+      if (typeof value === 'string' && value.trim() !== '') return value;
+      if (Array.isArray(value)) {
+        const first = value.find(v => typeof v === 'string' && v.trim() !== '');
+        if (typeof first === 'string') return first;
+      }
+    }
+    return '';
+  };
+
+  const handlePublicRegisterSubmit = (data: Partial<UserProfile>, _family: FamilyMember[]) => {
+    const isStaff = data.registrantType === 'PDAO Staff' || data.role === 'Admin' || data.role === 'SuperAdmin';
+
+    const firstName = (data.firstName || '').trim();
+    const middleName = (data.middleName || '').trim();
+    const lastName = (data.lastName || '').trim();
+    const fullName = [firstName, middleName, lastName].filter(Boolean).join(' ').trim();
+
+    const staffOffice = (data.customData as unknown as { staffOffice?: string } | undefined)?.staffOffice || '';
+    const staffPosition = (data.customData as unknown as { staffPosition?: string } | undefined)?.staffPosition || '';
+
+    const payload: Record<string, unknown> = {
+      account_type: isStaff ? 'staff' : 'pwd',
+      name: fullName,
+      first_name: firstName,
+      middle_name: middleName,
+      last_name: lastName,
+      email: (data.email || '').trim(),
+      password: data.password || '',
+      password_confirmation: data.password || '',
+      contact_number: data.contactNumber || '',
+      address: data.address || '',
+      birth_date: data.birthDate || '',
+      sex: data.sex || 'Other',
+      blood_type: data.bloodType || '',
+      disability_category: isStaff ? '' : (data.disabilityCategory || ''),
+      emergency_contact_name: data.emergencyContact?.name || '',
+      emergency_contact_relation: data.emergencyContact?.relation || '',
+      emergency_contact_number: data.emergencyContact?.contact || '',
+      staff_office: isStaff ? staffOffice : '',
+      staff_position: isStaff ? staffPosition : '',
+    };
+
+    return new Promise<{ success: boolean; message?: string }>((resolve) => {
+      router.post(route('register', {}, false), payload, {
+        preserveScroll: true,
+        onSuccess: () => {
+          setShowPublicRegistrationModal(false);
+          setShowLoginPopover(false);
+          resolve({ success: true, message: 'Account created. Please log in.' });
+        },
+        onError: (errors) => {
+          const message = extractFirstError(errors as Record<string, unknown>) || 'Registration failed. Please review your details and try again.';
+          resolve({ success: false, message });
+        },
+      });
     });
   };
 
@@ -118,15 +185,24 @@ const LandingPage: React.FC<{ initialSection?: string | null; allowAdminRegistra
     if (initialSection === 'login') {
       setShowLoginPopover(true);
       setShowAdminRegistrationModal(false);
+      setShowPublicRegistrationModal(false);
+    }
+
+    if (initialSection === 'signup') {
+      setShowPublicRegistrationModal(true);
+      setShowAdminRegistrationModal(false);
+      setShowLoginPopover(false);
     }
 
     if (initialSection === 'admin-register') {
       if (canUseAdminRegistration) {
         setShowAdminRegistrationModal(true);
         setShowLoginPopover(false);
+        setShowPublicRegistrationModal(false);
       } else {
         setShowAdminRegistrationModal(false);
         setShowLoginPopover(true);
+        setShowPublicRegistrationModal(false);
       }
     }
   }, [initialSection]);
@@ -135,12 +211,15 @@ const LandingPage: React.FC<{ initialSection?: string | null; allowAdminRegistra
     if (!searchSignal) return;
     if (searchSignal.page === 'home') {
       if (searchSignal.section === 'login') setShowLoginPopover(true);
-      // Legacy hook: public signup was removed; treat as login.
-      if (searchSignal.section === 'signup') setShowLoginPopover(true);
+      if (searchSignal.section === 'signup') {
+        setShowPublicRegistrationModal(true);
+        setShowLoginPopover(false);
+      }
       if (searchSignal.section === 'admin-register') {
         if (canUseAdminRegistration) {
           setShowAdminRegistrationModal(true);
           setShowLoginPopover(false);
+          setShowPublicRegistrationModal(false);
         }
       }
       setSearchSignal(null);
@@ -342,13 +421,13 @@ const LandingPage: React.FC<{ initialSection?: string | null; allowAdminRegistra
                 <input required type="password" value={loginForm.data.password} onChange={(e) => { loginForm.setData('password', e.target.value); setLoginError(''); }} placeholder="Enter your password..." className="w-full pl-12 pr-6 py-4 bg-white/15 border-2 border-white/25 rounded-[20px] font-medium text-base placeholder:text-white/40 outline-none transition-colors focus:bg-white/20 focus:border-white/40 focus:ring-2 focus:ring-white/30" />
               </div>
               {loginError && <div className="p-3 rounded-[12px] bg-red-500/20 border border-red-300/50 text-red-100 text-xs font-black flex items-center gap-2"><i className="fa-solid fa-exclamation-circle"></i> {loginError}</div>}
-              <button type="submit" disabled={loginForm.processing} className="w-full py-4 rounded-[20px] bg-white text-alaga-blue font-black uppercase tracking-widest text-sm hover:shadow-lg hover:shadow-white/50 hover:scale-105 transition-transform duration-200 active:scale-95 flex items-center justify-center gap-2 focus:outline-none focus:ring-4 focus:ring-white/30 disabled:opacity-60 disabled:hover:scale-100"><i className="fa-solid fa-arrow-right-to-bracket"></i> Log In</button>
+              <button type="submit" disabled={loginForm.processing} className="w-full py-4 rounded-[20px] bg-alaga-gold text-alaga-navy font-black uppercase tracking-widest text-sm hover:shadow-lg hover:shadow-alaga-gold/50 hover:scale-105 transition-transform duration-200 active:scale-95 flex items-center justify-center gap-2 focus:outline-none focus:ring-4 focus:ring-alaga-gold/30 disabled:opacity-60 disabled:hover:scale-100"><i className="fa-solid fa-arrow-right-to-bracket"></i> Log In</button>
             </form>
             <div className="flex items-center gap-4"><div className="h-px flex-1 bg-white/20"></div><p className="text-[11px] font-black uppercase opacity-60">New Here?</p><div className="h-px flex-1 bg-white/20"></div></div>
             {canUseAdminRegistration ? (
-              <button onClick={() => { setShowAdminRegistrationModal(true); setShowLoginPopover(false); setLoginError(''); loginForm.reset(); }} className="w-full py-4 rounded-[20px] bg-alaga-gold text-alaga-navy font-black uppercase tracking-widest text-sm hover:shadow-lg hover:shadow-alaga-gold/50 hover:scale-105 transition-transform duration-200 active:scale-95 flex items-center justify-center gap-2 focus:outline-none focus:ring-4 focus:ring-alaga-gold/30"><i className="fa-solid fa-user-plus"></i> Open Registration Portal</button>
+              <button onClick={() => { setShowAdminRegistrationModal(true); setShowPublicRegistrationModal(false); setShowLoginPopover(false); setLoginError(''); loginForm.reset(); }} className="w-full py-4 rounded-[20px] bg-alaga-gold text-alaga-navy font-black uppercase tracking-widest text-sm hover:shadow-lg hover:shadow-alaga-gold/50 hover:scale-105 transition-transform duration-200 active:scale-95 flex items-center justify-center gap-2 focus:outline-none focus:ring-4 focus:ring-alaga-gold/30"><i className="fa-solid fa-user-plus"></i> Open Registration Portal</button>
             ) : (
-              <p className="text-center text-xs opacity-80 font-medium">New accounts are issued by municipal administrators.</p>
+              <button onClick={() => { setShowPublicRegistrationModal(true); setShowAdminRegistrationModal(false); setShowLoginPopover(false); setLoginError(''); loginForm.reset(); }} className="w-full py-4 rounded-[20px] bg-white text-alaga-blue font-black uppercase tracking-widest text-sm hover:shadow-lg hover:shadow-white/50 hover:scale-105 transition-transform duration-200 active:scale-95 flex items-center justify-center gap-2 focus:outline-none focus:ring-4 focus:ring-white/30"><i className="fa-solid fa-user-plus"></i> Register (PWD / Staff)</button>
             )}
           </div>
         </div>
@@ -478,6 +557,25 @@ const LandingPage: React.FC<{ initialSection?: string | null; allowAdminRegistra
               <RegistrationWorkflow
                 onSubmit={handleAdminRegisterSubmit}
                 onCancel={() => setShowAdminRegistrationModal(false)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPublicRegistrationModal && (
+        <div className="fixed inset-0 z-[475] alagalink-overlay-scroll alagalink-topbar-safe flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-alaga-charcoal rounded-[32px] w-full max-w-6xl shadow-[0_40px_100px_rgba(0,0,0,0.5)] border border-white/10 overflow-hidden relative">
+            <button
+              onClick={() => setShowPublicRegistrationModal(false)}
+              className="absolute top-6 right-6 w-12 h-12 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all z-20"
+            >
+              <i className="fa-solid fa-xmark"></i>
+            </button>
+            <div className="max-h-[85vh] overflow-y-auto p-6 md:p-10">
+              <RegistrationWorkflow
+                onSubmit={handlePublicRegisterSubmit}
+                onCancel={() => setShowPublicRegistrationModal(false)}
               />
             </div>
           </div>

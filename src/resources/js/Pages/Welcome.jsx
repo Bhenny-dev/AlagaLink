@@ -12,11 +12,10 @@ export default function Welcome({ auth }) {
 
     useEffect(() => {
         if (!isLoggedIn) return;
-        if (isAdmin) return;
         router.visit(route('dashboard', {}, false));
     }, [isLoggedIn, isAdmin]);
 
-    if (isLoggedIn && !isAdmin) {
+    if (isLoggedIn) {
         return (
             <>
                 <Head title="Redirecting" />

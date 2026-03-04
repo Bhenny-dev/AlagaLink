@@ -306,6 +306,40 @@ const RegistrationWorkflow: React.FC<RegistrationWorkflowProps> = ({
         {isStaff && (
           <div className="bg-white dark:bg-alaga-charcoal rounded-[20px] p-10 shadow-sm border border-alaga-blue/20 space-y-8 animate-in zoom-in-95">
             <div className="flex items-center gap-4 text-alaga-blue"><i className="fa-solid fa-briefcase text-2xl"></i><h3 className="text-xl font-black">2. Professional Qualifications (PDAO / MSWDO)</h3></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase opacity-40 tracking-widest">Office / Department</label>
+                <input
+                  required
+                  value={(formData.customData as unknown as { staffOffice?: string } | undefined)?.staffOffice || ''}
+                  onChange={e => setFormData({
+                    ...formData,
+                    customData: {
+                      ...formData.customData,
+                      staffOffice: e.target.value,
+                    },
+                  })}
+                  className={`${fieldBaseClass} ring-alaga-blue/30`}
+                  placeholder="e.g. PDAO, MSWDO"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase opacity-40 tracking-widest">Position / Title</label>
+                <input
+                  required
+                  value={(formData.customData as unknown as { staffPosition?: string } | undefined)?.staffPosition || ''}
+                  onChange={e => setFormData({
+                    ...formData,
+                    customData: {
+                      ...formData.customData,
+                      staffPosition: e.target.value,
+                    },
+                  })}
+                  className={`${fieldBaseClass} ring-alaga-blue/30`}
+                  placeholder="e.g. Social Worker, Admin Officer"
+                />
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-4">
                  <div className="space-y-2"><label className="text-[10px] font-black uppercase opacity-40 tracking-widest">Highest Educational Attainment</label><input required value={qualifications.education} onChange={e => setQualifications({...qualifications, education: e.target.value})} className={`${fieldBaseClass} ring-alaga-blue/30`} placeholder="e.g. BS Social Work, Public Admin" /></div>
