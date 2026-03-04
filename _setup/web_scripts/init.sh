@@ -42,3 +42,6 @@ if [ -f "$WORKDIR/public/hot" ]; then
     echo "Removing stale Vite hot file..."
     rm -f "$WORKDIR/public/hot" || true
 fi
+
+echo "Running database migrations..."
+php artisan migrate --force
