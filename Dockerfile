@@ -4,7 +4,7 @@ FROM php:8.3-apache
 RUN apt-get update && apt-get install -y \
     curl \
     dos2unix \
-    git \ 
+    git \
     libfreetype6-dev \
     libjpeg62-turbo-dev \
     libonig-dev \
@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
     libwebp-dev \
     libxml2-dev \
     mariadb-client \
+    nodejs \
     npm \
     unzip \
     zip \
@@ -41,12 +42,6 @@ COPY --from=composer/composer:latest-bin /composer /usr/bin/composer
 # Enable Apache mod_rewrite
 RUN a2enmod rewrite
 COPY ./_setup/web_scripts/apache.conf /etc/apache2/sites-available/000-default.conf
-
-# Install NVM and Node.js LTS
-ENV NVM_VERSION=master
-RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/${NVM_VERSION}/install.sh | bash
-RUN nvm install --lts | bash
-RUN nvm use --lts | bash
 
 # Set working directory
 WORKDIR /var/www/html
