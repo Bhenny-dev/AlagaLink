@@ -178,6 +178,25 @@ const FloatingAssistiveButton: React.FC = () => {
     });
   }, [filteredUsers, directUnreadByPeer, directLastMessageAtByPeer]);
 
+  const hubUnreadCounts = useMemo(() => {
+    let members = 0;
+    let staff = 0;
+
+    for (const [peerId, count] of Object.entries(directUnreadByPeer)) {
+      if (!count || count <= 0) continue;
+      if (peerId === OFFICE_ID) continue;
+
+      const u = users.find(x => x.id === peerId);
+      if (!u) continue;
+      if (u.id === currentUser?.id) continue;
+
+      if (u.role === 'User') members += count;
+      else staff += count;
+    }
+
+    return { members, staff };
+  }, [directUnreadByPeer, users, currentUser?.id]);
+
   return (
     <>
       {/* THE FLOATING BUTTON */}
@@ -212,13 +231,14 @@ const FloatingAssistiveButton: React.FC = () => {
           >
             <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-black/20 pointer-events-none"></div>
             <i className={`fa-solid ${(isOpen || showAdminHub) ? 'fa-xmark' : isAdmin ? 'fa-envelopes-bulk' : 'fa-comment-dots'} text-2xl relative z-10 drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]`}></i>
-
-            {directUnreadTotal > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center border-2 border-white/70">
-                {directUnreadTotal > 99 ? '99+' : directUnreadTotal}
-              </span>
-            )}
           </div>
+
+          {/* Unread badge must live outside the overflow-hidden button so it won't clip */}
+          {directUnreadTotal > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center border-2 border-white/70 pointer-events-none">
+              {directUnreadTotal > 99 ? '99+' : directUnreadTotal}
+            </span>
+          )}
         </div>
       </div>
 
@@ -271,8 +291,22 @@ const FloatingAssistiveButton: React.FC = () => {
                 </div>
               )}
                 <div className="mt-4 flex bg-white/10 p-1 rounded-xl">
-                  <button onClick={() => setHubTab('PWD')} className={`flex-1 py-2 text-[9px] font-black uppercase rounded-lg transition-all ${hubTab === 'PWD' ? 'bg-white text-alaga-blue shadow-lg' : 'opacity-60'}`}>Members</button>
-                  <button onClick={() => setHubTab('Staff')} className={`flex-1 py-2 text-[9px] font-black uppercase rounded-lg transition-all ${hubTab === 'Staff' ? 'bg-white text-alaga-blue shadow-lg' : 'opacity-60'}`}>Staff</button>
+                  <button onClick={() => setHubTab('PWD')} className={`flex-1 py-2 text-[9px] font-black uppercase rounded-lg transition-all relative ${hubTab === 'PWD' ? 'bg-white text-alaga-blue shadow-lg' : 'opacity-60'}`}>
+                    Members
+                    {hubUnreadCounts.members > 0 && (
+                      <span className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full text-[9px] font-black flex items-center justify-center ${hubTab === 'PWD' ? 'bg-red-500 text-white' : 'bg-red-500 text-white'}`}>
+                        {hubUnreadCounts.members > 99 ? '99+' : hubUnreadCounts.members}
+                      </span>
+                    )}
+                  </button>
+                  <button onClick={() => setHubTab('Staff')} className={`flex-1 py-2 text-[9px] font-black uppercase rounded-lg transition-all relative ${hubTab === 'Staff' ? 'bg-white text-alaga-blue shadow-lg' : 'opacity-60'}`}>
+                    Staff
+                    {hubUnreadCounts.staff > 0 && (
+                      <span className={`absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full text-[9px] font-black flex items-center justify-center ${hubTab === 'Staff' ? 'bg-red-500 text-white' : 'bg-red-500 text-white'}`}>
+                        {hubUnreadCounts.staff > 99 ? '99+' : hubUnreadCounts.staff}
+                      </span>
+                    )}
+                  </button>
                 </div>
               </header>
 
