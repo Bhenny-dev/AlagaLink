@@ -215,7 +215,7 @@ const Navbar: React.FC<{ onNavigate: (page: string) => void, currentPage: string
   };
 
   return (
-    <nav className="sticky top-0 z-[1000] bg-alaga-blue dark:bg-alaga-navy text-white shadow-[0_10px_30px_rgba(0,0,0,0.1)] px-4 py-4 flex items-center justify-between transition-all duration-500">
+    <nav className="fixed top-0 left-0 right-0 z-[1000] bg-alaga-blue dark:bg-alaga-navy text-white shadow-[0_10px_30px_rgba(0,0,0,0.1)] px-4 py-4 flex items-center justify-between transition-all duration-500">
       <div className="flex items-center gap-2 md:gap-3 cursor-pointer shrink-0" onClick={() => handleNavigate('home')}>
         <div className="w-9 h-9 md:w-10 md:h-10 bg-white rounded-lg flex items-center justify-center shadow-lg transform active:scale-90 transition-transform inner-glow">
           <i className="fa-solid fa-hands-holding-child text-alaga-blue text-lg md:text-xl drop-shadow-md"></i>

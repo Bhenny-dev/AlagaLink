@@ -29,9 +29,9 @@ const Profile: React.FC = () => {
 
       {hasApprovedID && currentUser && (
         <section className="animate-in slide-in-from-bottom-6 duration-1000">
-          <div className="flex flex-col lg:flex-row items-center gap-12 bg-white dark:bg-alaga-charcoal p-6 md:p-12 rounded-[24px] md:rounded-[48px] border border-gray-100 dark:border-white/5 shadow-2xl relative overflow-hidden">
+          <div className="flex flex-col lg:flex-row items-center gap-12 bg-white dark:bg-alaga-charcoal p-6 md:p-12 rounded-[24px] md:rounded-[48px] border border-gray-100 dark:border-white/5 shadow-2xl relative">
             <div className="absolute -top-24 -right-24 w-96 h-96 bg-alaga-blue/5 rounded-full blur-[100px] pointer-events-none"></div>
-            
+
             <div className="flex-1 space-y-6 relative z-10 text-center lg:text-left">
               <div className="space-y-3">
                 <div className="inline-flex items-center gap-3 px-4 py-1.5 bg-alaga-blue/10 text-alaga-blue rounded-full">
@@ -43,7 +43,7 @@ const Profile: React.FC = () => {
                   Your approved PWD identification card. Click to view full details and QR code.
                 </p>
               </div>
-              
+
               <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4">
                 <div className="flex items-center gap-2 px-5 py-2.5 bg-alaga-teal/10 text-alaga-teal rounded-xl border border-alaga-teal/20 text-[10px] font-black uppercase tracking-widest">
                   <i className="fa-solid fa-shield-check animate-pulse"></i>

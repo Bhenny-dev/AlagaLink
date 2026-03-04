@@ -18,17 +18,17 @@ const DigitalIdCard: React.FC<DigitalIdCardProps> = ({ user }) => {
 
   return (
     <div className="w-full max-w-[540px] mx-auto perspective-1000 select-none">
-      {/* 
+      {/*
           PVC ID (CR80) Standard Specs:
           Physical Size: 85.60 mm x 53.98 mm
           Digital Aspect Ratio: 1.5858
           Corner Radius: 12px (approx 3.18mm)
       */}
-      <div 
+      <div
         onClick={() => setIsFlipped(!isFlipped)}
-        className={`relative aspect-[1.5858/1] w-full transition-transform duration-1000 cursor-pointer preserve-3d rounded-[12px] shadow-[0_35px_70px_-15px_rgba(37,70,240,0.4)] ${isFlipped ? 'rotate-y-180' : ''}`}
+        className={`relative aspect-[1.5858/1] w-full transition-transform duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] cursor-pointer preserve-3d will-change-transform rounded-[12px] shadow-[0_35px_70px_-15px_rgba(37,70,240,0.4)] ${isFlipped ? 'rotate-y-180' : ''}`}
       >
-        
+
         {/* ============================================================
             FRONT SIDE - RICH BLUE PROFESSIONAL THEME
             ============================================================ */}
@@ -37,7 +37,7 @@ const DigitalIdCard: React.FC<DigitalIdCardProps> = ({ user }) => {
           <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: `url('https://www.transparenttextures.com/patterns/circuit-board.png')` }}></div>
           <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/30 pointer-events-none"></div>
           <div className="absolute -top-20 -left-20 w-64 h-64 bg-white/5 rounded-full blur-3xl pointer-events-none"></div>
-          
+
           <div className="relative z-10 flex flex-col h-full text-white">
             {/* Header Section */}
             <div className="flex items-center justify-between mb-2">
@@ -59,7 +59,7 @@ const DigitalIdCard: React.FC<DigitalIdCardProps> = ({ user }) => {
 
             {/* Main Content Grid */}
             <div className="flex-1 grid grid-cols-12 gap-3 mt-1 items-center">
-              
+
               {/* Photo Area */}
               <div className="col-span-3 flex flex-col justify-center items-center">
                 <div className="aspect-[25/30] w-full bg-alaga-navy/40 border-[1pt] border-white/20 rounded shadow-2xl overflow-hidden relative">
@@ -144,7 +144,7 @@ const DigitalIdCard: React.FC<DigitalIdCardProps> = ({ user }) => {
             ============================================================ */}
         <div className="absolute inset-0 backface-hidden rounded-[12px] overflow-hidden bg-white border border-gray-200 rotate-y-180 flex flex-col p-[4mm] shadow-inner z-0">
            <div className="absolute inset-0 bg-alaga-blue/5 pointer-events-none" style={{ backgroundImage: `radial-gradient(#2546F0 0.2px, transparent 0.2px)`, backgroundSize: '6px 6px' }}></div>
-           
+
            <div className="relative z-10 flex flex-col h-full">
               <h3 className="text-center text-[9pt] font-black text-alaga-blue uppercase tracking-[0.1em] border-b border-gray-100 pb-2 mb-4">
                 Official PWD System Credentials
@@ -203,7 +203,7 @@ const DigitalIdCard: React.FC<DigitalIdCardProps> = ({ user }) => {
                     <i className="fa-solid fa-shield-check text-2xl text-alaga-blue"></i>
                  </div>
               </div>
-              
+
               <div className="mt-2 pt-1 border-t border-gray-50 flex justify-between items-center opacity-20">
                  <p className="text-[5pt] font-black uppercase tracking-[0.3em]">End of Document Block</p>
                  <p className="text-[5pt] font-black uppercase tracking-widest italic">Issued: {issuedDate}</p>
@@ -215,7 +215,7 @@ const DigitalIdCard: React.FC<DigitalIdCardProps> = ({ user }) => {
       {/* Control Actions & Interaction Tooltip */}
       <div className="mt-10 flex flex-col items-center gap-5">
          <div className="flex flex-wrap items-center justify-center gap-4">
-            <button 
+            <button
               onClick={() => setIsFlipped(!isFlipped)}
               className="flex items-center gap-3 px-8 py-4 bg-alaga-blue text-white rounded-3xl shadow-2xl hover:bg-alaga-navy active:scale-95 transition-all text-xs font-black uppercase tracking-widest group"
             >
@@ -227,7 +227,7 @@ const DigitalIdCard: React.FC<DigitalIdCardProps> = ({ user }) => {
                Print PDF
             </button>
          </div>
-         
+
          <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-30 animate-pulse flex items-center gap-3">
            <i className="fa-solid fa-hand-pointer"></i>
            Tap card to flip 180°
