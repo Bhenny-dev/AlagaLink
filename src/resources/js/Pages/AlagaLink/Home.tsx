@@ -272,7 +272,7 @@ const Home: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) 
       {/* 3. Personal Digital ID Card Section (Fluid Radii) */}
       {!isSearching && hasDigitalId && currentUser && (
         <section className="animate-in slide-in-from-bottom-6 duration-1000">
-           <div className="flex flex-col lg:flex-row items-center gap-12 bg-white dark:bg-alaga-charcoal p-6 md:p-12 rounded-[24px] md:rounded-[48px] border border-gray-100 dark:border-white/5 shadow-2xl relative inflated-card">
+           <div className="flex flex-col lg:flex-row items-center gap-12 bg-white dark:bg-alaga-charcoal p-6 md:p-12 rounded-[24px] md:rounded-[48px] border border-gray-100 dark:border-white/5 shadow-2xl relative transform-gpu transition-transform duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:-translate-y-1 hover:scale-[1.01]">
             <div className="absolute -top-24 -right-24 w-96 h-96 bg-alaga-blue/5 rounded-full blur-[100px] pointer-events-none"></div>
 
             <div className="flex-1 space-y-6 relative z-10 text-center lg:text-left">
