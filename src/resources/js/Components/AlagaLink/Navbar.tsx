@@ -217,13 +217,13 @@ const Navbar: React.FC<{ onNavigate: (page: string) => void, currentPage: string
   return (
     <nav className="fixed top-0 left-0 right-0 z-[1000] bg-alaga-blue dark:bg-alaga-navy text-white shadow-[0_10px_30px_rgba(0,0,0,0.1)] px-4 py-4 flex items-center justify-between transition-all duration-500">
       <div className="flex items-center gap-2 md:gap-3 cursor-pointer shrink-0" onClick={() => handleNavigate('home')}>
-        <div className="w-9 h-9 md:w-10 md:h-10 bg-white rounded-lg flex items-center justify-center shadow-lg transform active:scale-90 transition-transform inner-glow overflow-hidden p-1">
+        <div className="w-11 h-11 md:w-12 md:h-12 rounded-lg flex items-center justify-center shadow-lg transform active:scale-90 transition-transform inner-glow overflow-hidden p-0.5">
           <Image
             src="/images/Alagalink_Logo/AlagaLink_Logo.png"
             alt="AlagaLink"
-            width={40}
-            height={40}
-            className="w-full h-full object-contain"
+            width={300}
+            height={300}
+            className="w-full h-full object-contain alaga-logo-glow-white"
             priority
           />
         </div>
