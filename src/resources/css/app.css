@@ -183,3 +183,14 @@ html {
         filter: drop-shadow(0 0 18px rgba(37, 70, 240, 0.35));
     }
 }
+
+@layer utilities {
+    .alagalink-overlay-scroll {
+        overflow-y: auto;
+    }
+
+    .alagalink-topbar-safe {
+        padding-top: calc(6rem + 1rem) !important;
+        padding-bottom: 2rem !important;
+    }
+}

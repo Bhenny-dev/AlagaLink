@@ -789,7 +789,7 @@ const Programs: React.FC = () => {
 
       {/* Admin Evaluation Modal */}
       {selectedRequest && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-0 md:p-10 bg-black/80 backdrop-blur-md">
+        <div className="fixed inset-0 z-[200] flex items-start justify-center p-0 md:p-10 bg-black/80 backdrop-blur-md alagalink-overlay-scroll alagalink-topbar-safe">
            <div className="bg-white dark:bg-alaga-charcoal w-full h-full md:rounded-[48px] overflow-hidden relative shadow-[0_40px_100px_rgba(0,0,0,0.6)] border border-white/10 inflated-card">
               <button onClick={closeModal} className="absolute top-8 right-8 w-12 h-12 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all z-20 shadow-xl border border-white/10">
                 <i className="fa-solid fa-xmark text-xl"></i>

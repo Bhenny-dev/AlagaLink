@@ -174,7 +174,7 @@ const InventoryPortal: React.FC<InventoryPortalProps> = ({
 
         {/* Local Assets & Record Editor */}
         {isAddingNew && editingItemData && (
-          <div className="fixed inset-0 z-[250] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+           <div className="fixed inset-0 z-[250] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 alagalink-overlay-scroll alagalink-topbar-safe">
              <div className="bg-white dark:bg-alaga-charcoal w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[32px] shadow-2xl p-10 space-y-8 animate-in zoom-in-95 no-scrollbar">
                 <div className="flex items-center justify-between">
                    <h3 className="text-2xl font-black">{editingItemData.id ? 'Modify Record' : 'New System Entry'}</h3>
@@ -216,7 +216,7 @@ const InventoryPortal: React.FC<InventoryPortalProps> = ({
         )}
 
         {(selectedLivelihood || selectedMedical || selectedDevice) && (
-          <div className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[150] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 alagalink-overlay-scroll alagalink-topbar-safe">
             <div className="bg-white dark:bg-alaga-charcoal w-full max-w-4xl h-[90vh] rounded-[24px] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95">
               {(() => {
                 const item = selectedLivelihood || selectedMedical || selectedDevice;

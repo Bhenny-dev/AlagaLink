@@ -423,7 +423,7 @@ const LandingPage: React.FC = () => {
       </section>
 
       {showServicePopover && selectedService && (
-        <div className="fixed inset-0 z-[460] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[460] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200 alagalink-overlay-scroll alagalink-topbar-safe">
           <div className="bg-white dark:bg-alaga-charcoal rounded-[24px] w-full max-w-3xl p-6 shadow-[0_40px_100px_rgba(0,0,0,0.5)] border border-white/10 overflow-y-auto max-h-[80vh]">
             <div className="flex items-start justify-between">
               <div>
@@ -546,7 +546,7 @@ const LandingPage: React.FC = () => {
       )}
 
       {showApplyPopover && (
-        <div className="fixed inset-0 z-[470] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[470] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200 alagalink-overlay-scroll alagalink-topbar-safe">
           <div className="bg-white dark:bg-alaga-charcoal rounded-[24px] w-full max-w-md p-6 shadow-[0_40px_80px_rgba(0,0,0,0.4)] border border-white/10">
             <h4 className="font-black text-lg">Please sign in to apply</h4>
             <p className="opacity-60 text-sm mt-2">To request this service{applyTarget ? `: ${applyTarget.title}` : ''}, you need to be logged in. Please register or login to continue.</p>
@@ -559,7 +559,7 @@ const LandingPage: React.FC = () => {
       )}
 
       {aboutService && (
-        <div className="fixed inset-0 z-[450] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[450] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200 alagalink-overlay-scroll alagalink-topbar-safe">
           <div className="bg-white dark:bg-alaga-charcoal rounded-[32px] w-full max-w-2xl p-8 shadow-[0_40px_100px_rgba(0,0,0,0.5)] border border-white/10">
              <div className="flex items-start justify-between">
                 <div>
@@ -581,7 +581,7 @@ const LandingPage: React.FC = () => {
       </footer>
 
       {showLoginPopover && (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300 alagalink-overlay-scroll alagalink-topbar-safe">
            <div className="bg-white dark:bg-alaga-charcoal rounded-[48px] w-full max-w-md shadow-[0_40px_100px_rgba(0,0,0,0.5)] overflow-hidden animate-in zoom-in-95 duration-300 relative border border-white/10">
               <button
                 onClick={() => {
@@ -659,7 +659,7 @@ const LandingPage: React.FC = () => {
       )}
 
       {showPWDIDPopover && (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300 alagalink-overlay-scroll alagalink-topbar-safe">
            <div className="bg-white dark:bg-alaga-charcoal rounded-[48px] w-full max-w-3xl shadow-[0_40px_100px_rgba(0,0,0,0.5)] overflow-hidden animate-in zoom-in-95 duration-300 relative border border-white/10">
               <button
                 onClick={() => setShowPWDIDPopover(false)}
@@ -707,7 +707,7 @@ const LandingPage: React.FC = () => {
       )}
 
       {showSignupPopover && (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300 alagalink-overlay-scroll alagalink-topbar-safe">
            <div className="bg-white dark:bg-alaga-charcoal rounded-[48px] w-full max-w-3xl shadow-[0_40px_100px_rgba(0,0,0,0.5)] overflow-hidden animate-in zoom-in-95 duration-300 relative border border-white/10">
               <button
                 onClick={() => setShowSignupPopover(false)}

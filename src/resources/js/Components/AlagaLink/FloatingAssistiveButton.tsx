@@ -188,7 +188,7 @@ const FloatingAssistiveButton: React.FC = () => {
       {/* BIG CENTERED ADMIN HUB */}
       {showAdminHub && isAdmin && (
         <div
-          className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-8 bg-alaga-navy/60 backdrop-blur-md animate-in fade-in duration-300"
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-8 bg-alaga-navy/60 backdrop-blur-md animate-in fade-in duration-300 alagalink-overlay-scroll alagalink-topbar-safe"
           role="dialog"
           aria-modal="true"
           onClick={() => { setShowAdminHub(false); setActiveChatUser(null); }}

@@ -17,7 +17,7 @@ const ReportMissingWizard: React.FC<ReportMissingWizardProps> = ({ onClose, onNa
   const [stage, setStage] = useState<'Search' | 'Details'>('Search');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
-  
+
   const [formData, setFormData] = useState({
     lastSeen: '',
     clothes: '',
@@ -29,9 +29,9 @@ const ReportMissingWizard: React.FC<ReportMissingWizardProps> = ({ onClose, onNa
 
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return [];
-    return users.filter(u => 
-      u.role !== 'Admin' && 
-      (`${u.firstName} ${u.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    return users.filter(u =>
+      u.role !== 'Admin' &&
+      (`${u.firstName} ${u.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
        u.id.toLowerCase().includes(searchQuery.toLowerCase()))
     );
   }, [searchQuery, users]);
@@ -71,9 +71,9 @@ const ReportMissingWizard: React.FC<ReportMissingWizardProps> = ({ onClose, onNa
   };
 
   return (
-    <div className="fixed inset-0 z-[300] bg-black/80 backdrop-blur-md flex items-center justify-center p-0 md:p-6 animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[300] bg-black/80 backdrop-blur-md flex items-start justify-center p-0 md:p-6 animate-in fade-in duration-300 alagalink-overlay-scroll alagalink-topbar-safe">
       <div className="bg-white dark:bg-alaga-charcoal w-full h-full md:max-w-2xl md:h-[85vh] md:rounded-[32px] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95">
-        
+
         <header className="p-6 border-b border-gray-100 dark:border-white/5 flex items-center justify-between bg-red-500 text-white shrink-0">
           <div className="flex items-center gap-4">
              <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center">
@@ -99,12 +99,12 @@ const ReportMissingWizard: React.FC<ReportMissingWizardProps> = ({ onClose, onNa
 
               <div className="relative group max-w-xl mx-auto">
                 <i className="fa-solid fa-search absolute left-5 top-1/2 -translate-y-1/2 opacity-30 text-lg group-focus-within:text-red-500 transition-colors"></i>
-                <input 
+                <input
                   autoFocus
-                  type="text" 
+                  type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Enter Name or LT-PWD Number..." 
+                  placeholder="Enter Name or LT-PWD Number..."
                   className="w-full pl-14 pr-6 py-4 bg-alaga-gray dark:bg-alaga-navy/20 border-2 border-transparent rounded-[20px] font-bold text-base outline-none focus:bg-white dark:focus:bg-alaga-navy/40 focus:border-red-500 transition-all shadow-sm"
                 />
               </div>
@@ -116,8 +116,8 @@ const ReportMissingWizard: React.FC<ReportMissingWizardProps> = ({ onClose, onNa
                       <>
                         <p className="text-[10px] font-black uppercase opacity-40 tracking-widest px-2">Matches ({searchResults.length})</p>
                         {searchResults.map(u => (
-                          <div 
-                            key={u.id} 
+                          <div
+                            key={u.id}
                             onClick={() => handleUserSelect(u)}
                             className="p-4 bg-white dark:bg-alaga-navy/20 rounded-[20px] border border-gray-100 dark:border-white/5 flex items-center justify-between cursor-pointer hover:border-red-500 hover:shadow-xl transition-all group"
                           >
@@ -162,9 +162,9 @@ const ReportMissingWizard: React.FC<ReportMissingWizardProps> = ({ onClose, onNa
                   </div>
                </div>
 
-               <ImageInput 
-                 value={formData.photoUrl} 
-                 onChange={val => setFormData({...formData, photoUrl: val})} 
+               <ImageInput
+                 value={formData.photoUrl}
+                 onChange={val => setFormData({...formData, photoUrl: val})}
                  label="Current Incident Photo (Overrides Profile)"
                  aspect="square"
                />

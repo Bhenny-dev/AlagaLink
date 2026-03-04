@@ -30,7 +30,7 @@ const CaseDetailModal: React.FC<CaseDetailModalProps> = ({ report, onClose }) =>
   const canManageCase = currentUser?.role === 'Admin' || currentUser?.role === 'SuperAdmin';
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-0 md:p-10 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[200] flex items-start justify-center p-0 md:p-10 bg-black/80 backdrop-blur-md animate-in fade-in duration-300 alagalink-overlay-scroll alagalink-topbar-safe">
       <div className="bg-white dark:bg-alaga-charcoal w-full h-full md:max-w-4xl md:h-[85vh] md:rounded-[32px] shadow-2xl relative flex flex-col md:flex-row animate-in zoom-in-95 duration-300 overflow-hidden">
 
         {/* Left Side: Photo & Quick Status */}

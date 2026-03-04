@@ -237,7 +237,7 @@ const Members: React.FC = () => {
       )}
 
       {selectedUser && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm alagalink-overlay-scroll alagalink-topbar-safe">
           <div className="bg-white dark:bg-alaga-charcoal rounded-[24px] max-w-4xl w-full max-h-[95vh] overflow-y-auto shadow-2xl relative animate-in zoom-in-95 no-scrollbar">
             <button onClick={closeDetail} className="absolute top-6 right-6 text-gray-400 z-[210] hover:text-red-500 transition-colors"><i className="fa-solid fa-circle-xmark text-2xl"></i></button>
             {isEditing ? (
@@ -385,7 +385,7 @@ const Members: React.FC = () => {
 
       {/* Promotion Reason Pop-over */}
       {isPromotionModalOpen && selectedUser && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300 alagalink-overlay-scroll alagalink-topbar-safe">
           <div className="bg-white dark:bg-alaga-charcoal rounded-[32px] w-full max-w-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
             <header className="p-8 bg-purple-600 text-white relative">
               <div className="absolute top-0 right-0 p-6 opacity-10 rotate-12">

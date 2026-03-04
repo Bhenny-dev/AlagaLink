@@ -326,7 +326,7 @@ const Home: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) 
 
       {/* Overlays (Adjusted Radii) */}
       {showRegisteredOptions && (
-        <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300 alagalink-overlay-scroll alagalink-topbar-safe">
           <div className="bg-white dark:bg-alaga-charcoal p-8 rounded-[32px] shadow-2xl w-full max-w-sm relative animate-in zoom-in-95">
             <button onClick={() => setShowRegisteredOptions(false)} className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 dark:bg-white/5 hover:bg-red-500 hover:text-white transition-all"><i className="fa-solid fa-xmark"></i></button>
             <div className="text-center mb-10"><div className="w-16 h-16 bg-alaga-blue/10 text-alaga-blue rounded-2xl flex items-center justify-center mx-auto mb-4"><i className="fa-solid fa-users text-2xl"></i></div><h3 className="text-2xl font-black">Target Registry</h3><p className="text-xs opacity-50">Select category to manage:</p></div>
@@ -339,7 +339,7 @@ const Home: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) 
       )}
 
       {showPendingOptions && (
-        <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300 alagalink-overlay-scroll alagalink-topbar-safe">
           <div className="bg-white dark:bg-alaga-charcoal p-8 rounded-[32px] shadow-2xl w-full max-w-sm relative animate-in zoom-in-95">
             <button onClick={() => setShowPendingOptions(false)} className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 dark:bg-white/5 hover:bg-red-500 hover:text-white transition-all"><i className="fa-solid fa-xmark"></i></button>
             <div className="text-center mb-10"><div className="w-16 h-16 bg-alaga-gold/10 text-alaga-gold rounded-2xl flex items-center justify-center mx-auto mb-4"><i className="fa-solid fa-id-card text-2xl"></i></div><h3 className="text-2xl font-black">Pending Desk</h3><p className="text-xs opacity-50">Select evaluation queue:</p></div>

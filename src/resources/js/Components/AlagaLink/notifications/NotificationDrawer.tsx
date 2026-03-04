@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { useAppContext } from '@/Providers/AlagaLink/AppContext';
+import { getNotificationPresentation, parseNotificationLink } from './notificationPresentation';
 
 interface NotificationDrawerProps {
   isOpen: boolean;
@@ -9,14 +10,14 @@ interface NotificationDrawerProps {
 }
 
 const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ isOpen, onClose, onNavigate }) => {
-  const { notifications, markNotificationRead, clearAllNotifications, setSearchSignal } = useAppContext();
+  const { notifications, users, programRequests, reports, markNotificationRead, clearAllNotifications, setSearchSignal } = useAppContext();
 
   if (!isOpen) return null;
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   return (
-    <div className="fixed inset-0 z-[250] flex justify-end">
+    <div className="fixed inset-0 z-[250] flex justify-end alagalink-topbar-safe">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-500"
@@ -60,12 +61,10 @@ const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ isOpen, onClose
                     markNotificationRead(notif.id);
                     if (notif.link) {
                       // Support structured links of the form "page:section:itemId"
-                      const parts = notif.link.split(':');
-                      const page = parts[0] || notif.link;
-                      const section = parts[1];
-                      const itemId = parts[2];
-                      if (section) {
-                        setSearchSignal({ page, section, itemId });
+                      const parsed = parseNotificationLink(notif.link);
+                      const page = parsed?.page || notif.link;
+                      if (parsed?.section || parsed?.itemId) {
+                        setSearchSignal({ page, section: parsed?.section, itemId: parsed?.itemId });
                       }
                       onNavigate(page);
                       onClose();
@@ -77,6 +76,15 @@ const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ isOpen, onClose
                       : 'bg-alaga-blue/5 dark:bg-alaga-blue/10 border-alaga-blue/20 shadow-xl shadow-alaga-blue/5'
                   } hover:scale-[1.02] active:scale-95`}
                 >
+                  {(() => {
+                    const presentation = getNotificationPresentation({
+                      notif,
+                      users,
+                      programRequests,
+                      reports,
+                    });
+
+                    return (
                   <div className="flex gap-6">
                     <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-lg ${
                       notif.type === 'Success' ? 'bg-alaga-teal text-white' :
@@ -95,15 +103,20 @@ const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ isOpen, onClose
                     <div className="flex-1 min-w-0 space-y-2">
                       <div className="flex items-center justify-between">
                         <p className={`text-xs font-black uppercase tracking-[0.15em] ${notif.isRead ? 'opacity-40' : 'text-alaga-blue dark:text-alaga-blue'}`}>
-                          {notif.title}
+                          {presentation.title}
                         </p>
                         {!notif.isRead && (
                           <span className="w-2.5 h-2.5 bg-alaga-blue rounded-full shadow-[0_0_10px_rgba(37,70,240,0.5)]"></span>
                         )}
                       </div>
                       <p className={`text-base leading-relaxed font-semibold ${notif.isRead ? 'opacity-40' : 'text-gray-900 dark:text-white/90'}`}>
-                        {notif.message}
+                        {presentation.message}
                       </p>
+                      {(presentation.meta || presentation.destination) && (
+                        <div className="pt-1 text-[10px] font-black uppercase tracking-widest opacity-40">
+                          {[presentation.destination, presentation.meta].filter(Boolean).join(' • ')}
+                        </div>
+                      )}
                       <div className="pt-2 flex items-center gap-2">
                         <i className="fa-solid fa-clock text-[10px] opacity-20"></i>
                         <p className="text-[10px] font-black opacity-30 uppercase tracking-widest">
@@ -112,6 +125,8 @@ const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ isOpen, onClose
                       </div>
                     </div>
                   </div>
+                    );
+                  })()}
                 </div>
               ))}
             </div>

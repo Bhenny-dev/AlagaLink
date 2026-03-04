@@ -172,6 +172,7 @@ class HandleInertiaRequests extends Middleware
                             'isRead' => (bool) $notif->is_read,
                             'link' => $notif->link !== null ? (string) $notif->link : null,
                             'programType' => $notif->program_type !== null ? (string) $notif->program_type : null,
+                            'data' => $notif->data,
                         ];
                     })
                     ->values()

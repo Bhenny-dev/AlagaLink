@@ -69,6 +69,7 @@ export interface Notification {
   isRead: boolean;
   link?: string;
   programType?: string;
+  data?: Record<string, unknown> | null;
 }
 
 export interface UserProfile {

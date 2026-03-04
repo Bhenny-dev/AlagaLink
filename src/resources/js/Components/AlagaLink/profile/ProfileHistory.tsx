@@ -2,13 +2,14 @@
 import React, { useState } from 'react';
 import { ProgramAvailment } from '@/Providers/AlagaLink/types';
 import { useAppContext } from '@/Providers/AlagaLink/AppContext';
+import { getNotificationPresentation } from '@/Components/AlagaLink/notifications/notificationPresentation';
 
 interface ProfileHistoryProps {
   history: ProgramAvailment[];
 }
 
 const ProfileHistory: React.FC<ProfileHistoryProps> = ({ history }) => {
-  const { notifications } = useAppContext();
+  const { notifications, users, programRequests, reports } = useAppContext();
   const [activeTab, setActiveTab] = useState<'Services' | 'Activities'>('Services');
 
   const renderServices = () => (
@@ -33,7 +34,7 @@ const ProfileHistory: React.FC<ProfileHistoryProps> = ({ history }) => {
             </div>
             <div className="text-right">
               <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm ${
-                p.status === 'Completed' || p.status === 'Approved' ? 'bg-alaga-teal text-white' : 
+                p.status === 'Completed' || p.status === 'Approved' ? 'bg-alaga-teal text-white' :
                 p.status === 'Rejected' ? 'bg-red-500 text-white' : 'bg-alaga-gold text-alaga-navy'
               }`}>
                 {p.status}
@@ -55,6 +56,15 @@ const ProfileHistory: React.FC<ProfileHistoryProps> = ({ history }) => {
         </div>
       ) : (
         notifications.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((notif) => (
+          (() => {
+            const presentation = getNotificationPresentation({
+              notif,
+              users,
+              programRequests,
+              reports,
+            });
+
+            return (
           <div key={notif.id} className="p-6 bg-alaga-gray dark:bg-alaga-navy/20 rounded-3xl flex items-start gap-6 border border-transparent hover:border-alaga-blue/20 transition-all">
             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${
               notif.type === 'Success' ? 'bg-green-100 text-green-700 dark:bg-alaga-teal/20 dark:text-alaga-teal' :
@@ -71,12 +81,17 @@ const ProfileHistory: React.FC<ProfileHistoryProps> = ({ history }) => {
             </div>
             <div className="flex-1 min-w-0">
                <div className="flex items-center justify-between mb-1">
-                 <p className="text-xs font-black uppercase tracking-widest text-gray-950 dark:text-white">{notif.title}</p>
+                 <p className="text-xs font-black uppercase tracking-widest text-gray-950 dark:text-white">{presentation.title}</p>
                  <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase">{new Date(notif.date).toLocaleDateString()}</span>
                </div>
-               <p className="text-sm font-medium leading-relaxed text-gray-700 dark:text-gray-300">{notif.message}</p>
+               <p className="text-sm font-medium leading-relaxed text-gray-700 dark:text-gray-300">{presentation.message}</p>
+               {presentation.meta && (
+                 <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mt-2">{presentation.meta}</p>
+               )}
             </div>
           </div>
+            );
+          })()
         ))
       )}
     </div>
@@ -87,13 +102,13 @@ const ProfileHistory: React.FC<ProfileHistoryProps> = ({ history }) => {
       <div className="flex items-center justify-between mb-8 shrink-0">
         <h3 className="text-2xl font-black text-gray-900 dark:text-white">Registry Activity Log</h3>
         <div className="flex p-1 bg-alaga-gray dark:bg-alaga-navy/40 rounded-xl">
-           <button 
+           <button
              onClick={() => setActiveTab('Services')}
              className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'Services' ? 'bg-white dark:bg-alaga-charcoal text-alaga-blue shadow-sm' : 'opacity-40'}`}
            >
              Services
            </button>
-           <button 
+           <button
              onClick={() => setActiveTab('Activities')}
              className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'Activities' ? 'bg-white dark:bg-alaga-charcoal text-alaga-blue shadow-sm' : 'opacity-40'}`}
            >
@@ -101,7 +116,7 @@ const ProfileHistory: React.FC<ProfileHistoryProps> = ({ history }) => {
            </button>
         </div>
       </div>
-      
+
       <div className="flex-1 overflow-y-auto no-scrollbar">
         {activeTab === 'Services' ? renderServices() : renderActivities()}
       </div>

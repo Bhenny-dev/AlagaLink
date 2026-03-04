@@ -345,7 +345,7 @@ const LandingPage: React.FC<{ initialSection?: string | null; allowAdminRegistra
       </section>
 
       {showServicePopover && selectedService && (
-        <div className="fixed inset-0 z-[460] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md transition-opacity duration-300 ease-out">
+        <div className="fixed inset-0 z-[460] alagalink-overlay-scroll alagalink-topbar-safe flex items-center justify-center p-4 bg-black/70 backdrop-blur-md transition-opacity duration-300 ease-out">
           <div className="bg-white dark:bg-alaga-charcoal rounded-[24px] w-full max-w-3xl p-6 shadow-[0_40px_100px_rgba(0,0,0,0.5)] border border-white/10 overflow-y-auto max-h-[80vh] transform-gpu transition-transform duration-300 ease-out">
             <div className="flex items-start justify-between">
               <div>
@@ -437,7 +437,7 @@ const LandingPage: React.FC<{ initialSection?: string | null; allowAdminRegistra
       )}
 
       {showApplyPopover && (
-        <div className="fixed inset-0 z-[470] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[470] alagalink-overlay-scroll alagalink-topbar-safe flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
           <div className="bg-white dark:bg-alaga-charcoal rounded-[24px] w-full max-w-md p-6 shadow-[0_40px_80px_rgba(0,0,0,0.4)] border border-white/10">
             <h4 className="font-black text-lg">Please sign in to apply</h4>
             <p className="opacity-60 text-sm mt-2">To request this service{applyTarget ? `: ${applyTarget.title}` : ''}, you need to be logged in. Please register or login to continue.</p>
@@ -450,13 +450,13 @@ const LandingPage: React.FC<{ initialSection?: string | null; allowAdminRegistra
       )}
 
       {aboutService && (
-        <div className="fixed inset-0 z-[450] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200"><div className="bg-white dark:bg-alaga-charcoal rounded-[32px] w-full max-w-2xl p-8 shadow-[0_40px_100px_rgba(0,0,0,0.5)] border border-white/10"><div className="flex items-start justify-between"><div><h3 className="text-2xl font-black">{aboutService.title}</h3><p className="opacity-60 mt-2">{aboutService.description}</p></div><button onClick={() => setAboutService(null)} className="text-sm text-gray-500">Close</button></div><div className="mt-6 flex items-center gap-4"><button onClick={() => { scrollTo(joinRef); setAboutService(null); }} className="px-6 py-3 bg-alaga-blue text-white rounded-[12px] font-black">Register / Login</button><button onClick={() => setAboutService(null)} className="px-6 py-3 border border-gray-200 rounded-[12px]">Dismiss</button></div></div></div>
+        <div className="fixed inset-0 z-[450] alagalink-overlay-scroll alagalink-topbar-safe flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200"><div className="bg-white dark:bg-alaga-charcoal rounded-[32px] w-full max-w-2xl p-8 shadow-[0_40px_100px_rgba(0,0,0,0.5)] border border-white/10"><div className="flex items-start justify-between"><div><h3 className="text-2xl font-black">{aboutService.title}</h3><p className="opacity-60 mt-2">{aboutService.description}</p></div><button onClick={() => setAboutService(null)} className="text-sm text-gray-500">Close</button></div><div className="mt-6 flex items-center gap-4"><button onClick={() => { scrollTo(joinRef); setAboutService(null); }} className="px-6 py-3 bg-alaga-blue text-white rounded-[12px] font-black">Register / Login</button><button onClick={() => setAboutService(null)} className="px-6 py-3 border border-gray-200 rounded-[12px]">Dismiss</button></div></div></div>
       )}
 
       <footer className="py-20 px-6 text-center opacity-30"><p className="text-[10px] font-black uppercase tracking-[0.5em]">La Trinidad Municipal Government • Benguet Province</p></footer>
 
       {showAdminRegistrationModal && canUseAdminRegistration && (
-        <div className="fixed inset-0 z-[480] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[480] alagalink-overlay-scroll alagalink-topbar-safe flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
           <div className="bg-white dark:bg-alaga-charcoal rounded-[32px] w-full max-w-6xl shadow-[0_40px_100px_rgba(0,0,0,0.5)] border border-white/10 overflow-hidden relative">
             <button
               onClick={() => setShowAdminRegistrationModal(false)}
@@ -475,7 +475,7 @@ const LandingPage: React.FC<{ initialSection?: string | null; allowAdminRegistra
       )}
 
       {showLoginPopover && (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[400] alagalink-overlay-scroll alagalink-topbar-safe flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
           <div className="bg-white dark:bg-alaga-charcoal rounded-[48px] w-full max-w-md shadow-[0_40px_100px_rgba(0,0,0,0.5)] overflow-hidden animate-in zoom-in-95 duration-300 relative border border-white/10">
             <button
               onClick={() => {
