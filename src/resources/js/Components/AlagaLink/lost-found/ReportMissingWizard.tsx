@@ -156,7 +156,7 @@ const ReportMissingWizard: React.FC<ReportMissingWizardProps> = ({ onClose, onNa
                     <div className="w-24 h-24 rounded-[20px] bg-gray-100 shadow-2xl border-4 border-white shrink-0" />
                   )}
                   <div>
-                    <h4 className="text-2xl font-black text-alaga-blue">{selectedUser?.firstName} {selectedUser?.lastName}</h4>
+                    <h4 className="text-2xl font-black text-alaga-blue dark:text-white">{selectedUser?.firstName} {selectedUser?.lastName}</h4>
                     <p className="text-[9px] font-black uppercase tracking-widest opacity-40 mb-2">Registry ID: {selectedUser?.id}</p>
                     <button type="button" onClick={() => setStage('Search')} className="text-[10px] font-black underline opacity-60 hover:opacity-100 transition-opacity">Change Selected Member</button>
                   </div>

@@ -56,7 +56,7 @@ const CaseDetailModal: React.FC<CaseDetailModalProps> = ({ report, onClose }) =>
             <div className={`w-fit px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest mb-4 shadow-xl ${isFound ? 'bg-alaga-teal' : 'bg-red-500 animate-pulse'}`}>
               {report.status} Status
             </div>
-            <h2 className="text-4xl font-black mb-2">{report.name}</h2>
+            <h2 className="text-4xl font-black mb-2 !text-white drop-shadow-lg">{report.name}</h2>
             <p className="text-sm opacity-80 font-medium flex items-center gap-2">
               <i className="fa-solid fa-fingerprint text-alaga-gold"></i>
               Registry ID: {report.userId}
@@ -228,7 +228,7 @@ const CaseDetailModal: React.FC<CaseDetailModalProps> = ({ report, onClose }) =>
                       subjectUser.familyComposition.map(fam => (
                         <div key={fam.id} className="p-4 bg-white dark:bg-alaga-navy/20 border border-gray-100 dark:border-white/5 rounded-2xl flex items-center justify-between">
                            <div>
-                              <p className="text-xs font-black">{fam.fullName}</p>
+                            <p className="text-xs font-black text-gray-900 dark:text-white">{fam.fullName}</p>
                               <p className="text-[9px] font-bold opacity-40 uppercase">{fam.relation} • {fam.age} Yrs</p>
                            </div>
                            <button className="w-8 h-8 rounded-full bg-alaga-gray dark:bg-white/5 flex items-center justify-center text-alaga-blue hover:bg-alaga-blue hover:text-white transition-all">
