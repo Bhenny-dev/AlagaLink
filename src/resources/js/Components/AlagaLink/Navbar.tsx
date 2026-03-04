@@ -391,17 +391,12 @@ const Navbar: React.FC<{ onNavigate: (page: string) => void, currentPage: string
                   <>
                     <div className="px-6 py-6 border-b border-gray-100 dark:border-white/10 text-center space-y-2">
                       <p className="font-black text-lg text-3d">Welcome</p>
-                      <p className="text-xs opacity-60 font-medium">Sign in to your account or register</p>
+                      <p className="text-xs opacity-60 font-medium">Sign in to your account</p>
                     </div>
                     <div className="py-2 px-2 space-y-2">
                        <button onClick={() => {setShowProfileMenu(false); setSearchSignal({ page: 'home', section: 'login' }); handleNavigate('home');}} className="w-full text-left px-5 py-3.5 text-xs font-black uppercase tracking-widest hover:bg-alaga-blue/5 rounded-2xl flex items-center transition-all group">
                          <i className="fa-solid fa-arrow-right-to-bracket mr-4 w-5 text-center text-alaga-blue"></i>
                          <span className="opacity-70 group-hover:opacity-100">Log In</span>
-                       </button>
-
-                       <button onClick={() => {setShowProfileMenu(false); setSearchSignal({ page: 'home', section: 'signup' }); handleNavigate('home');}} className="w-full text-left px-5 py-3.5 text-xs font-black uppercase tracking-widest hover:bg-alaga-teal/5 rounded-2xl flex items-center transition-all group">
-                         <i className="fa-solid fa-user-plus mr-4 w-5 text-center text-alaga-teal"></i>
-                         <span className="opacity-70 group-hover:opacity-100">Sign Up</span>
                        </button>
 
                        <button onClick={() => {toggleTheme(); setShowProfileMenu(false);}} className="w-full text-left px-5 py-3.5 text-xs font-black uppercase tracking-widest hover:bg-alaga-gold/5 rounded-2xl flex items-center transition-all group mt-4 pt-4 border-t border-gray-100 dark:border-white/10">
@@ -494,14 +489,6 @@ const Navbar: React.FC<{ onNavigate: (page: string) => void, currentPage: string
                     >
                       <i className="fa-solid fa-arrow-right-to-bracket"></i>
                       Log In
-                    </button>
-
-                    <button
-                      onClick={() => { setIsMobileMenuOpen(false); setSearchSignal({ page: 'home', section: 'signup' }); handleNavigate('home'); }}
-                      className="w-full py-4 rounded-[20px] bg-alaga-teal/10 text-alaga-teal dark:text-white font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3"
-                    >
-                      <i className="fa-solid fa-user-plus"></i>
-                      Sign Up
                     </button>
 
                     <button

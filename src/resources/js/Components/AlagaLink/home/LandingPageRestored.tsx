@@ -135,6 +135,8 @@ const LandingPage: React.FC<{ initialSection?: string | null; allowAdminRegistra
     if (!searchSignal) return;
     if (searchSignal.page === 'home') {
       if (searchSignal.section === 'login') setShowLoginPopover(true);
+      // Legacy hook: public signup was removed; treat as login.
+      if (searchSignal.section === 'signup') setShowLoginPopover(true);
       if (searchSignal.section === 'admin-register') {
         if (canUseAdminRegistration) {
           setShowAdminRegistrationModal(true);
@@ -181,7 +183,15 @@ const LandingPage: React.FC<{ initialSection?: string | null; allowAdminRegistra
               </div>
             ))}
           </div>
-          <button onClick={() => setShowLoginPopover(true)} className="px-12 py-6 bg-alaga-blue text-white rounded-[32px] font-black text-xl shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center gap-4 mx-auto">Enter Municipal Portal <i className="fa-solid fa-chevron-down text-sm animate-bounce"></i></button>
+          <button
+            onClick={() => {
+              scrollTo(joinRef);
+              setShowLoginPopover(false);
+            }}
+            className="px-12 py-6 bg-alaga-blue text-white rounded-[32px] font-black text-xl shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center gap-4 mx-auto"
+          >
+            Enter Municipal Portal <i className="fa-solid fa-chevron-down text-sm animate-bounce"></i>
+          </button>
         </div>
       </section>
 
@@ -394,36 +404,6 @@ const LandingPage: React.FC<{ initialSection?: string | null; allowAdminRegistra
                 </div>
               ))}
 
-              {selectedService.id === 'medical' && medicalServices.map((m: MedicalService) => (
-                <div key={m.id} className="flex items-center gap-4 p-3 rounded-lg border border-gray-100">
-                  {m.photoUrl ? (
-                    <Image src={m.photoUrl} alt={m.name} width={64} height={48} className="object-cover rounded" />
-                  ) : (
-                    <div className="w-16 h-12 rounded bg-gray-100" aria-hidden />
-                  )}
-                  <div className="flex-1">
-                    <div className="font-black">{m.name}</div>
-                    <div className="text-xs opacity-60">{m.assistanceDetail || m.overview || ''}</div>
-                  </div>
-                  <button onClick={() => { if (currentUser) { const req: ProgramAvailment = { id: `req-${Date.now()}`, userId: currentUser.id, programType: 'Medical', title: m.name || 'Medical Request', status: 'Pending', dateApplied: new Date().toISOString(), details: '', requestedItemId: m.id }; addProgramRequest(req); setShowServicePopover(false); } else { handleApplyAttempt({ id: m.id, title: m.name }); } }} className="px-3 py-2 bg-red-500 text-white rounded-md uppercase tracking-widest text-xs font-black transition-transform duration-200 hover:scale-105 shadow-sm">Request</button>
-                </div>
-              ))}
-
-              {selectedService.id === 'livelihood' && livelihoodPrograms.map((l: LivelihoodProgram) => (
-                <div key={l.id} className="flex items-center gap-4 p-3 rounded-lg border border-gray-100">
-                  {l.photoUrl ? (
-                    <Image src={l.photoUrl} alt={l.photoAlt || l.title} width={64} height={48} className="object-cover rounded" />
-                  ) : (
-                    <div className="w-16 h-12 rounded bg-gray-100" aria-hidden />
-                  )}
-                  <div className="flex-1">
-                    <div className="font-black">{l.title}</div>
-                    <div className="text-xs opacity-60">{(l as unknown as { desc?: string; description?: string }).desc || (l as unknown as { desc?: string; description?: string }).description || l.overview || ''}</div>
-                  </div>
-                  <button onClick={() => { if (currentUser) { const req: ProgramAvailment = { id: `req-${Date.now()}`, userId: currentUser.id, programType: 'Livelihood', title: l.title || 'Livelihood Request', status: 'Pending', dateApplied: new Date().toISOString(), details: '', requestedItemId: l.id }; addProgramRequest(req); setShowServicePopover(false); } else { handleApplyAttempt({ id: l.id, title: l.title }); } }} className="px-3 py-2 bg-alaga-teal text-white rounded-md uppercase tracking-widest text-xs font-black transition-transform duration-200 hover:scale-105 shadow-sm">Request</button>
-                </div>
-              ))}
-
               {selectedService.id === 'philhealth' && (
                 <div className="p-4 rounded-lg border border-gray-100">
                   <p className="opacity-70 text-sm">Sponsored PhilHealth enrollment and benefit assistance. To apply, please register or log in and follow the PhilHealth enrollment workflow.</p>
@@ -462,7 +442,7 @@ const LandingPage: React.FC<{ initialSection?: string | null; allowAdminRegistra
             <h4 className="font-black text-lg">Please sign in to apply</h4>
             <p className="opacity-60 text-sm mt-2">To request this service{applyTarget ? `: ${applyTarget.title}` : ''}, you need to be logged in. Please register or login to continue.</p>
             <div className="mt-6 flex items-center gap-3">
-              <button onClick={() => { scrollTo(joinRef); setShowApplyPopover(false); setShowServicePopover(false); setShowLoginPopover(true); }} className="px-4 py-2 bg-alaga-blue text-white rounded-xl font-black">Scroll to Login</button>
+              <button onClick={() => { scrollTo(joinRef); setShowApplyPopover(false); setShowServicePopover(false); setShowLoginPopover(false); }} className="px-4 py-2 bg-alaga-blue text-white rounded-xl font-black">Scroll to Login</button>
               <button onClick={() => { setShowApplyPopover(false); }} className="px-4 py-2 border border-gray-200 rounded-xl">Dismiss</button>
             </div>
           </div>
