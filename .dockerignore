@@ -1,0 +1,22 @@
+# Dependency dirs
+**/node_modules
+**/vendor
+
+# Local env files
+.env
+**/.env
+
+# Local/runtime data
+docker_home
+mailtrap_data
+storage
+logs
+
+# Vite/Laravel build outputs (recreated during build)
+src/public/build
+src/public/hot
+
+# VCS + editor
+.git
+.vscode
+.idea

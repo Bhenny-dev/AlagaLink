@@ -4,7 +4,9 @@ services:
       context: .
       dockerfile: Dockerfile
     image: "alagalink-web:latest"
-    user: "${UID}:${GID}"
+    user: "${UID:-1000}:${GID:-1000}"
+    env_file:
+      - .env
     environment:
       - HOME=/home/developer
     ports:
@@ -17,33 +19,43 @@ services:
       - ./_setup/web_scripts:/scripts
       - ./src:/var/www/html
       - ./docker_home:/home/developer    # HOME for npm & node
+      - ./storage:/var/www/html/storage
+      - ./logs:/var/www/html/storage/logs
     depends_on:
       db:
         condition: service_healthy
       mailtrap:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
     command: >
       bash -c "
       mkdir -p /home/developer/.npm &&
       dos2unix /scripts/* &&
       chmod +x /scripts/* &&
       /scripts/init.sh &&
+      php artisan config:cache &&
       apache2-foreground"
 
   db:
-    image: "mysql:8.0"
+    image: "postgres:18"
+    env_file:
+      - .env
     environment:
-      - MYSQL_ROOT_PASSWORD=123456
-      - MYSQL_DATABASE=app_db
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     ports:
-      - "3307:3306"
+      - "5433:5432"
     networks:
       - db_network
     volumes:
-      - ./_setup/db_scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
-      - db_data:/var/lib/mysql
+      - pg_data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p123456"]
+      test: ["CMD-SHELL", "pg_isready -h localhost -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -51,7 +63,7 @@ services:
 
   mailtrap:
     image: axllent/mailpit:latest
-    user: "${UID}:${GID}"   # Make sure files are created with host user
+    user: "${UID:-1000}:${GID:-1000}"   # Make sure files are created with host user
     ports:
       - "1025:1025"
       - "8025:8025"
@@ -71,4 +83,4 @@ networks:
   mailtrap_network:
 
 volumes:
-  db_data:
+  pg_data:

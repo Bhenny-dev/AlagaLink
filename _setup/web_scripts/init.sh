@@ -3,8 +3,12 @@ set -e
 
 WORKDIR=/var/www/html
 
-npm config set cache $HOME/.npm
-npm config set prefix $HOME/.npm-global
+if command -v npm >/dev/null 2>&1; then
+    npm config set cache $HOME/.npm
+    npm config set prefix $HOME/.npm-global
+else
+    echo "npm not found; skipping npm configuration."
+fi
 
 # Initialize Laravel project if not already present
 echo "Checking for existing Laravel project..."

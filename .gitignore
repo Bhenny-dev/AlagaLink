@@ -4,3 +4,8 @@ vendor/
 
 **/node_modules/
 **/vendor/
+
+# Local secrets/runtime data (root-level)
+.env
+storage/
+logs/
