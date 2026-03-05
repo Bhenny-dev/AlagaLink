@@ -1,9 +1,10 @@
-FROM node:18 AS frontend
+FROM node:22 AS frontend
 
 WORKDIR /app
 COPY src/package.json src/package-lock.json ./
 RUN npm ci
 COPY src/ ./
+RUN rm -f .npmrc
 RUN npm run build
 
 
@@ -64,6 +65,7 @@ COPY --from=composer/composer:latest-bin /composer /usr/bin/composer
 # Enable Apache mod_rewrite
 RUN a2enmod rewrite
 COPY ./_setup/web_scripts/apache.conf /etc/apache2/sites-available/000-default.conf
+COPY ./_setup/web_scripts/start-prod.sh /usr/local/bin/start-prod.sh
 
 WORKDIR /var/www/html
 
@@ -83,23 +85,8 @@ RUN useradd -m laravel \
         /var/lock/apache2 \
         /var/log/apache2
 
+    RUN chmod +x /usr/local/bin/start-prod.sh
+
 USER laravel
 
-CMD ["sh", "-lc", "\
-    if [ -z \"${APP_KEY:-}\" ]; then \
-        echo 'ERROR: APP_KEY is not set. Configure it in Render Environment Variables.' >&2; \
-        exit 1; \
-    fi; \
-    i=0; \
-    until php artisan migrate --force; do \
-        i=$((i+1)); \
-        if [ $i -ge 10 ]; then \
-            echo 'ERROR: migrations failed after retries.' >&2; \
-            exit 1; \
-        fi; \
-        echo 'Database not ready yet; retrying in 3s...' >&2; \
-        sleep 3; \
-    done; \
-    php artisan config:cache; \
-    exec apache2-foreground \
-"
+CMD ["/usr/local/bin/start-prod.sh"]
