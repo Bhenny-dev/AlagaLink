@@ -84,3 +84,22 @@ RUN useradd -m laravel \
         /var/log/apache2
 
 USER laravel
+
+CMD ["sh", "-lc", "\
+    if [ -z \"${APP_KEY:-}\" ]; then \
+        echo 'ERROR: APP_KEY is not set. Configure it in Render Environment Variables.' >&2; \
+        exit 1; \
+    fi; \
+    i=0; \
+    until php artisan migrate --force; do \
+        i=$((i+1)); \
+        if [ $i -ge 10 ]; then \
+            echo 'ERROR: migrations failed after retries.' >&2; \
+            exit 1; \
+        fi; \
+        echo 'Database not ready yet; retrying in 3s...' >&2; \
+        sleep 3; \
+    done; \
+    php artisan config:cache; \
+    exec apache2-foreground \
+"
